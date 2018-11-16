@@ -3,34 +3,34 @@
 '''
 Steps involed in the program for retrieving the data from PACER website:
 
-Step-1: Hit the login page of the PACER training site.
-		URL: https://dcecf.psc.uscourts.gov/cgi-bin/login.pl
+Step-1 of 9: Hit the query page of the PACER training site.
+			 URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl
 
-Step-2: Enter the credentials provided by the training website and login.
-		Username="tr1234", Password="Pass!234"
-		And be redirected to the page with case information.
+Step-2 of 9: Enter the credentials provided by the training website and login.
+			 Username="tr1234", Password="Pass!234"
+			 And be redirected to the page with case information.
 
-Step-3: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl
-		to enter the data for querying. 
+Step-3 of 9: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl
+			 to enter the data for querying. 
 
-Step-4: Enter the values "1/1/2007" and "10/1/2007" 
-		in the "Filed Date" column and run the query.		
+Step-4 of 9: Enter the values "1/1/2007" and "10/1/2007" 
+			 in the "Filed Date" column and run the query.		
 
-Step-4: We will be redirected to the page that contains the case realted information.
-		Get the URL of that page.
+Step-4 of 9: We will be redirected to the page that contains the case realted information.
+			 Get the URL of that page.
 
-Step-5: Hit the URL from Step-4.
+Step-5 of 9: Hit the URL from Step-4.
 
-Step-6: Save the Web page (HTML content) in a folder and display the path of the file.
+Step-6 of 9: Save the Web page (HTML content) in a folder and display the path of the file.
 
-Step-7: Open each of the links of Case Number from URL in Step-4 and 
-		fetch the case information such as Case Number, parties involved, 
-		Case filed and terminated dates.
+Step-7 of 9: Open each of the links of Case Number from URL in Step-4 and 
+			 fetch the case information such as Case Number, parties involved, 
+			 Case filed and terminated dates.
 		
-Step-8: Fetch the data related to the additional info and 
-		create the appropriate JSON data structure.
+Step-8 of 9: Fetch the data related to the additional info and 
+			 create the appropriate JSON data structure.
 		
-Step-9: Logout
+Step-9 of 9: Logout
 '''
 
 import time
@@ -43,20 +43,33 @@ def login_into_pacer():
 	username = 'tr1234'
 	password = 'Pass!234'
 	
-	authentication_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl"
+	Qry_filed_from = '1/1/2007'
+	Qry_filed_to = '10/1/2008'
+	
+	authentication_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl"
 		
-	values = { 'login': username, 'key': password }
+	login_credentials = { 'login': username, 'key': password }
 	
-	data = urllib.urlencode(values)
+	login_data = urllib.urlencode(login_credentials)
 	
-	req = urllib2.Request(authentication_url, data)
+	request = urllib2.Request(authentication_url, login_data)
 	
-	response = urllib2.urlopen(req)
-	result = response.read()
+	login_response = urllib2.urlopen(request)
+	cookie = login_response.headers.get('Set-Cookie')
 	
+	#Enter the data to be queried and make new request
 	
-	print result	
-	#print(result)
+	query_request = urllib2.Request(authentication_url, urllib.urlencode( { Qry_filed_from : '1/1/2007', Qry_filed_to : '10/1/2008' } ))
+	
+	query_request.add_header('cookie', cookie)
+	
+	query_response = urllib2.urlopen(query_request)
+		
+	login_result = login_response.read()
+	
+	#Qry_filed_from Qry_filed_to
+	
+	print(login_result)
 	print "Login Successful"
 	print "\n***************************************************************\n"
 
@@ -64,14 +77,18 @@ def login_into_pacer():
 def open_query_page():
 	query_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl"
 	
-	query_resp = urllib2.urlopen(query_url)
+	query_request = urllib2.Request(query_url)
+	query_resp = urllib2.urlopen(query_request)
 	
 	print query_resp.read()
 	print "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
 
 	
-#Step-1 and 2 Hit the login Page and enter credentials
+#Step-1 and 2 of 9: Hit the query page of the PACER training site.
+#					URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl
+
 login_into_pacer()
 
-#Step-3 Hit the query page
-open_query_page()
+#Step-3 of 9: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl
+#			  to enter the data for querying. 
+#open_query_page()
