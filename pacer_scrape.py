@@ -72,18 +72,14 @@ def login_into_pacer():
 	#print(soup.prettify())
 	
 	form_action_value = soup.find('form').get('action')
-	print form_action_value
 	
 	action_content = re.findall(r"[0-9]*", form_action_value)
-	
-	print action_content
-	
+
 	#Extract only the number part
 	for i in action_content:
 		if i.isdigit() and len(i) >=5:
 			required_form_number = i	
 	
-	print required_form_number
 	
 	#By here we get the contents of the "Query" page
 	#Now we start hitting the content page
@@ -102,7 +98,7 @@ def login_into_pacer():
 	
 	contents = opener.open(data_page_url, query_parameters_url_encoded).read()
 
-	#print contents
+	print contents
 
 
 	
