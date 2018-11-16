@@ -54,8 +54,7 @@ def login_into_pacer():
 	cj = CookieJar()
 	
 	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-	opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-	
+
 	# input-type values from the html Login form
 	login_credentials = { 'login': username, 'key': password }
 	
@@ -92,7 +91,7 @@ def login_into_pacer():
 						 'Qry_filed_from' : '1/1/2007', 'Qry_filed_to' : '10/1/2008',
 						 'lastentry_from': '', 'lastentry_to': '', 'last_name': '',
 						 'first_name': '', 'middle_name': '', 'person_type': ''
-						}
+					}
 
 	query_parameters_url_encoded = urllib.urlencode(query_parameters)
 	
