@@ -1,4 +1,9 @@
-#! /path/to/ENV/bin/python
+#!/py-env/ENV/bin/python
+
+import time
+import urllib
+import base64
+import urllib2, cookielib
 
 '''
 Steps involed in the program for retrieving the data from PACER website:
@@ -32,11 +37,6 @@ Step-8 of 9: Fetch the data related to the additional info and
 		
 Step-9 of 9: Logout
 '''
-
-import time
-import urllib
-import base64
-import urllib2, cookielib
 	
 def login_into_pacer():
 	
