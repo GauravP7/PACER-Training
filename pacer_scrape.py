@@ -1,9 +1,9 @@
-#!/py-env/ENV/bin/python
+#!/py-virtualenv/ENV/bin/python
 
 import time
 import urllib
 import base64
-import urllib2, cookielib
+import urllib2
 
 '''
 Steps involed in the program for retrieving the data from PACER website:
