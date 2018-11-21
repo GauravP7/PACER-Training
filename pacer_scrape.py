@@ -6,7 +6,6 @@ import re
 import cookielib, urllib2
 from bs4 import BeautifulSoup
 
-
 '''
 Steps involed in the program for retrieving the data from PACER website:
 
@@ -39,19 +38,19 @@ Step-9 of 10: Fetch the data related to the additional info and
 
 Step-10 of 10: Logout
 '''
-def get_cookie_value(encoded_credentials):
-	#Hit the third page link
+
+def get_cookie_value(opener, encoded_credentials):
 	#Hit this site after logging in
 	#in order to get the cookie value
 	#https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout
 
-	third_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
-	third_page_request = urllib2.Request(third_page)
+	login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
+	login_page_request = urllib2.Request(login_page)
 
-	third_page_response = urllib2.urlopen(third_page_request , encoded_credentials)
-	third_page_contents = third_page_response.read()
+	login_page_response = opener.open(login_page_request , encoded_credentials)
+	login_page_contents = login_page_response.read()
 
-	soup = BeautifulSoup(third_page_contents, 'html.parser')
+	soup = BeautifulSoup(login_page_contents, 'html.parser')
 	#Extract cookie value
 	script_value = soup.script.get_text()
 
@@ -61,6 +60,7 @@ def get_cookie_value(encoded_credentials):
 	return pacer_session_cookie_value
 
 def get_url_random_numbers(query_page_contents):
+
 	#Extract random numbers
 	soup = BeautifulSoup(query_page_contents, 'html.parser')
 	form_action_value = soup.find('form').get('action')
@@ -74,25 +74,13 @@ def get_url_random_numbers(query_page_contents):
 
 def login_pacer(username = 'tr1234', password = 'Pass!234'):
 
-	#Set the cookie jar and build_opener
-	cj = cookielib.CookieJar()
-	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+	opener = urllib2.build_opener()
 	urllib2.install_opener(opener)
-
-	#Hit the first page link
-	first_page = 'https://www.pacer.gov/announcements/general/train.html'
-	first_page_request = urllib2.Request(first_page)
-	first_page_response = urllib2.urlopen(first_page_request)
-
-	#Hit the second page link
-	second_page= 'https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'
-	second_page_request = urllib2.Request(second_page)
-	second_page_response = urllib2.urlopen(second_page_request)
 
 	creds = {'login': username, 'key': password}
 	encoded_login_creds = urllib.urlencode(creds)
 
-	pacer_session_cookie_value = get_cookie_value(encoded_login_creds)
+	pacer_session_cookie_value = get_cookie_value(opener, encoded_login_creds)
 
 	opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
 
@@ -111,17 +99,17 @@ def login_pacer(username = 'tr1234', password = 'Pass!234'):
 	data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
 
 	query_parameters = {
-	'UserType':'',
-	'all_case_ids':0,
-	'case_num':'',
-	'Qry_filed_from':'1/1/2007',
-	'Qry_filed_to':'10/1/2008',
-	'lastentry_from':'',
-	'lastentry_to':'',
-	'last_name':'',
-	'first_name':'',
-	'middle_name':'',
-	'person_type':''
+		'UserType':'',
+		'all_case_ids':0,
+		'case_num':'',
+		'Qry_filed_from':'1/1/2007',
+		'Qry_filed_to':'10/1/2008',
+		'lastentry_from':'',
+		'lastentry_to':'',
+		'last_name':'',
+		'first_name':'',
+		'middle_name':'',
+		'person_type':''
 	}
 
 	query_parameters_encoded = urllib.urlencode(query_parameters)
@@ -133,7 +121,7 @@ def login_pacer(username = 'tr1234', password = 'Pass!234'):
 	save_webpage_and_get_page_path(case_details_page_contents)
 
 	#start scraping for case case_details
-	get_case_details(case_details_page_contents)
+	get_case_details(opener, case_details_page_contents)
 
 
 def save_webpage_and_get_page_path(page_contents=''):
@@ -143,11 +131,66 @@ def save_webpage_and_get_page_path(page_contents=''):
 	file_object.write(page_contents)
 	file_object.close()
 
-def get_case_details(case_details_page_contents):
+def get_case_details(opener, case_details_page_contents):
 	soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
-	tr_tags = soup.find_all('tr')
 
-	print tr_tags
+	table_contents = soup.find_all('tr')
+
+	for t_rows in table_contents:
+		t_data = t_rows.find_all('td')
+
+		for td in t_data:
+			if '-' in td.text:
+				case_number = td.text
+				print 'case_number:\t', case_number
+
+			elif 'filed' in td.text:
+				required_date = td.text
+				try:
+					case_filed_date = required_date.split()[1]
+					case_closed_date = required_date.split()[3]
+				except:
+					case_filed_date = ''
+					case_closed_date = ''
+
+				print 'case_filed_date', case_filed_date
+				print 'case_closed_date', case_closed_date
+
+			else:
+				parties_involved = td.text
+				print 'parties_involved:\t', parties_involved
+		#break
+
+	#Get links of all the cases
+	case_details_url_list = soup.select('td a')
+	case_details_dict = {}
+	case_details_list = []
+	case_count = 0
+
+	for case_detail in case_details_url_list:
+		base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		current_case_url = case_detail['href'] #Get the link of a particular case
+		current_case_response = opener.open(base_url + '/' + current_case_url)
+		current_case_contents = current_case_response.read()
+
+	    #Generate additional info
+		case_contents_soup = BeautifulSoup(current_case_contents, 'html.parser')
+		additional_info_links_list = case_contents_soup.select('td a')
+		additonal_info_json = {}
+
+		for additional_info in additional_info_links_list:
+
+			additional_info_name = additional_info.text
+			additional_info_link = additional_info['href']
+			additonal_info_json[additional_info_name] = additional_info_link
+
+			case_count += 1
+
+
+		print "additional_info_json:\t", additonal_info_json
+
+		#break
+
 
 
 login_pacer()
