@@ -98,18 +98,46 @@ def login_pacer(username = 'tr1234', password = 'Pass!234'):
 	#Now we start hitting the content page
 	data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
 
+	#Query parameter variables
+	user_type = ''
+	all_case_ids = 0
+	case_num = ''
+	query_filed_from = '1/1/2007'
+	query_filed_to = '10/1/2008'
+	lastentry_from = ''
+	lastentry_to = ''
+	last_name = ''
+	first_name = ''
+	middle_name = ''
+	person_type = ''
+
+	print "***************************************************"
+	print "Search Criteria are:"
+	print "user_type:\t", user_type
+	print "all_case_ids:\t", all_case_ids
+	print "case_num:\t", case_num
+	print "query_filed_from:\t", query_filed_from
+	print "query_filed_to:\t", query_filed_to
+	print "lastentry_from:\t", lastentry_from
+	print "lastentry_to:\t", lastentry_to
+	print "last_name:\t", last_name
+	print "first_name:\t", first_name
+	print "middle_name:\t", middle_name
+	print "person_type:\t", person_type
+	print "***************************************************"
+
 	query_parameters = {
-		'UserType':'',
-		'all_case_ids':0,
-		'case_num':'',
-		'Qry_filed_from':'1/1/2007',
-		'Qry_filed_to':'10/1/2008',
-		'lastentry_from':'',
-		'lastentry_to':'',
-		'last_name':'',
-		'first_name':'',
-		'middle_name':'',
-		'person_type':''
+		'UserType': user_type,
+		'all_case_ids': all_case_ids,
+		'case_num': case_num,
+		'Qry_filed_from': query_filed_from,
+		'Qry_filed_to': query_filed_to,
+		'lastentry_from': lastentry_from,
+		'lastentry_to': lastentry_to,
+		'last_name': last_name,
+		'first_name': first_name,
+		'middle_name': middle_name,
+		'person_type': person_type
 	}
 
 	query_parameters_encoded = urllib.urlencode(query_parameters)
@@ -127,9 +155,12 @@ def login_pacer(username = 'tr1234', password = 'Pass!234'):
 def save_webpage_and_get_page_path(page_contents=''):
 	file_path = '/home/mis/Training/Contents/'
 	file_name = 'case_details.html'
-	file_object = open(file_path + file_name, "w+")
+	page_path = file_path + file_name
+	file_object = open(page_path, "w+")
 	file_object.write(page_contents)
 	file_object.close()
+	print "page_path:\t", page_path
+	print "***************************************************"
 
 def get_case_details(opener, case_details_page_contents):
 	soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
@@ -138,6 +169,7 @@ def get_case_details(opener, case_details_page_contents):
 
 	for t_rows in table_contents:
 		t_data = t_rows.find_all('td')
+		case_details_count = 0
 
 		for td in t_data:
 			if '-' in td.text:
@@ -150,7 +182,7 @@ def get_case_details(opener, case_details_page_contents):
 					case_filed_date = required_date.split()[1]
 					case_closed_date = required_date.split()[3]
 				except:
-					case_filed_date = ''
+					case_filed_date = required_date.split()[1]
 					case_closed_date = ''
 
 				print 'case_filed_date', case_filed_date
@@ -159,13 +191,18 @@ def get_case_details(opener, case_details_page_contents):
 			else:
 				parties_involved = td.text
 				print 'parties_involved:\t', parties_involved
+
+			case_details_count += 1
+
+
 		#break
+	print "***************************************************"
 
 	#Get links of all the cases
 	case_details_url_list = soup.select('td a')
 	case_details_dict = {}
 	case_details_list = []
-	case_count = 0
+	additional_info_count = 0
 
 	for case_detail in case_details_url_list:
 		base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
@@ -184,13 +221,14 @@ def get_case_details(opener, case_details_page_contents):
 			additional_info_link = additional_info['href']
 			additonal_info_json[additional_info_name] = additional_info_link
 
-			case_count += 1
+		additional_info_count += 1
 
-
+		print "Additional info are:\t"
 		print "additional_info_json:\t", additonal_info_json
+		print "***************************************************"
 
-		#break
 
-
+		if additional_info_count >= 5:
+			break
 
 login_pacer()
