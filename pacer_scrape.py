@@ -9,34 +9,36 @@ from bs4 import BeautifulSoup
 '''
 Steps involed in the program for retrieving the data from PACER website:
 
-Step-1 of 10: Hit the login page of the PACER training site.
+Step-1 of 11: Hit the login page of the PACER training site.
 			  URL: https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout
 
-Step-2 of 10: Enter the credentials provided by the training website and login.
+Step-2 of 11: Enter the credentials provided by the training website and login.
 			  Username="tr1234", Password="Pass!234"
 			  And be redirected to the page with case information.
 
-Step-3 of 10: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?660038495246212-L_1_0-1
+Step-3 of 11: Validate PACER login by checking appropriate fields.
+
+Step-4 of 11: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?660038495246212-L_1_0-1
 			  to enter the data for querying.
 
-Step-4 of 10: Enter the values "1/1/2007" and "10/1/2007"
+Step-5 of 11: Enter the values "1/1/2007" and "10/1/2007"
 			  in the "Filed Date" column and run the query.
 
-Step-5 of 10: We will be redirected to the page that contains the case related information.
+Step-6 of 11: We will be redirected to the page that contains the case related information.
 			  Get the URL of that page.
 
-Step-6 of 10: Hit the URL from Step-5.
+Step-7 of 11: Hit the URL from Step-5.
 
-Step-7 of 10: Save the Web page (HTML content) in a folder and display the path of the file.
+Step-8 of 11: Save the Web page (HTML content) in a folder and display the path of the file.
 
-Step-8 of 10: Open each of the links of Case Number from URL in Step-4 and
+Step-9 of 11: Open each of the links of Case Number from URL in Step-4 and
 			  fetch the case information such as Case Number, parties involved,
 			  Case filed and terminated dates.
 
-Step-9 of 10: Fetch the data related to the additional info and
+Step-10 of 11: Fetch the data related to the additional info and
 			  create the appropriate JSON data structure.
 
-Step-10 of 10: Logout
+Step-11 of 11: Logout
 '''
 
 class SearchCriteria():
@@ -175,10 +177,14 @@ class PacerScrape():
 		'''
 
 		credentials = {'login': username, 'key': password}
-		encoded_login_creds = urllib.urlencode(credentials)
+		encoded_login_credentials = urllib.urlencode(credentials)
+
+		return encoded_login_credentials
+
+	def append_opener_header(self, opener, cookie_value):
 
 		#Get the session cookie value
-		pacer_session_cookie_value = self.get_cookie_value(opener, encoded_login_creds)
+		pacer_session_cookie_value = cookie_value
 
 		#Add the required headers
 		opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
@@ -186,6 +192,13 @@ class PacerScrape():
 		opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
 
 		opener.addheaders.append(('Cookie', pacer_session_cookie_value ))
+
+	def validate_pacer_login(self, pacer_session_cookie_value):
+
+		if pacer_session_cookie_value is None or pacer_session_cookie_value == '':
+			return False
+
+		return True
 
 	def hit_query_page(self, opener):
 
@@ -270,7 +283,7 @@ class PacerScrape():
 		'''
 		case_details_page_soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
 
-		table_contents = case_details_page_soup.find_all('tr')[:-6] #The last 6 rows contain the irrlevant
+		table_contents = case_details_page_soup.find_all('tr')[:-5000] #The last 6 rows contain the irrelevant information
 
 		for t_rows in table_contents:
 			t_data = t_rows.find_all('td')
@@ -279,7 +292,7 @@ class PacerScrape():
 			for td in t_data:
 				if '-' in td.text:
 					case_number = td.text
-					print 'case_number:\t', case_number
+					#print 'case_number:\t', case_number
 
 				elif 'filed' in td.text:
 					required_date = td.text
@@ -290,12 +303,12 @@ class PacerScrape():
 						case_filed_date = required_date.split()[1]
 						case_closed_date = ''
 
-					print 'case_filed_date:\t', case_filed_date
-					print 'case_closed_date:\t', case_closed_date
+					#print 'case_filed_date:\t', case_filed_date
+					#print 'case_closed_date:\t', case_closed_date
 
 				else:
 					parties_involved = td.text
-					print 'parties_involved:\t', parties_involved
+					#print 'parties_involved:\t', parties_involved
 
 				case_details_count += 1
 
@@ -327,9 +340,9 @@ class PacerScrape():
 
 			additional_info_count += 1
 
-			print "Additional info are:\t"
-			print "additional_info_json:\t", additonal_info_json
-			print "***************************************************"
+			#print "Additional info are:\t"
+			#print "additional_info_json:\t", additonal_info_json
+			#print "***************************************************"
 
 			if additional_info_count >= 5:
 				break
@@ -344,7 +357,14 @@ class PacerScrape():
 
 		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
 		logout_response = opener.open(logout_page_url)
-		print "Logged out successfully from the website"
+		logout_page_contents = logout_response.read()
+
+
+	def terminate_with_error_message(self):
+		print "The program is terminated since the login was unsuccessful."
+		print "Please check the credentials or your internet connection and try again"
+		exit()
+
 
 
 #Instantiate the PacerScrape class
@@ -352,7 +372,6 @@ pacer_scraper = PacerScrape()
 
 #Get the get_opener
 opener = pacer_scraper.get_opener()
-
 
 '''
 ################################################################################
@@ -364,12 +383,32 @@ Step-2 of 10: Enter the credentials provided by the training website and login.
 			  And be redirected to the page with case information.
 ################################################################################
 '''
+
 #Call the login_pacer method and begin the execution
 username = 'tr1234'
 password = 'Pass!234'
 
-pacer_scraper.login_pacer(opener, username, password)
+encoded_login_credentials = pacer_scraper.login_pacer(opener, username, password)
 
+try:
+	cookie_value = pacer_scraper.get_cookie_value(opener, encoded_login_credentials)
+	pacer_scraper.append_opener_header(opener, cookie_value)
+
+except:
+	pacer_scraper.terminate_with_error_message()
+
+pacer_scraper.logout(opener)
+
+'''
+################################################################################
+Step-3 of 11: Validate PACER login by checking appropriate fields.
+################################################################################
+'''
+
+proceed_scraping = pacer_scraper.validate_pacer_login(cookie_value)
+
+if not proceed_scraping:
+	pacer_scraper.terminate_with_error_message()
 '''
 ################################################################################
 Step-4 of 11: Hit the URL: https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?660038495246212-L_1_0-1
