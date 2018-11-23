@@ -2,7 +2,7 @@
 import urllib
 import urllib2
 import re
-import cookielib, urllib2
+import cookielib
 from bs4 import BeautifulSoup
 
 #####################################################################################################
@@ -68,16 +68,16 @@ class SearchCriteria():
 		print "all_case_ids:\t", self.all_case_ids
 		print "case_number:\t", self.case_number
 		print "case_status:\t", self.case_status
-		print "query_filed_from:\t", self.from_filed_date
-		print "query_filed_to:\t", self.to_filed_date
-		print "lastentry_from:\t", self.from_last_entry_date
-		print "lastentry_to:\t", self.to_last_entry_date
+		print "from_filed_date:\t", self.from_filed_date
+		print "to_filed_date:\t", self.to_filed_date
+		print "from_last_entry_date:\t", self.from_last_entry_date
+		print "to_last_entry_date:\t", self.to_last_entry_date
 		print "nature_of_suit:\t", self.nature_of_suit
 		print "cause_of_action:\t", self.cause_of_action
 		print "last_name:\t", self.last_name
 		print "first_name:\t", self.first_name
 		print "middle_name:\t", self.middle_name
-		print "person_type:\t", self.type
+		print "type:\t", self.type
 		print "exact_matches_only:\t", self.exact_matches_only
 		print "***************************************************"
 
@@ -161,10 +161,13 @@ class PacerScrape():
 		form_action_value = query_page_soup.find('form').get('action')
 		action_content = re.findall(r"[0-9]*", form_action_value)
 
+		'''
 		#Extract only the number part
 		for form_number in action_content:
 			if form_number.isdigit() and len(form_number) >= MINIMUM_FORM_NUMBER_SIZE:
 				required_form_number = form_number
+		'''
+		required_form_number = [form_number for form_number in action_content if form_number.isdigit() and len(form_number) >= MINIMUM_FORM_NUMBER_SIZE][0]
 
 		return required_form_number
 
@@ -287,7 +290,8 @@ class PacerScrape():
 		try:
 			case_details_page_soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
 
-			table_contents = case_details_page_soup.find_all('tr')[:-6]
+			table_contents = case_details_page_soup.find_all('tr')[:-4570]
+
 			#The last 6 rows contain the irrelevant information
 			#Hence they are discarded
 
@@ -306,17 +310,16 @@ class PacerScrape():
 							case_filed_date = required_date.split()[1]
 							case_closed_date = required_date.split()[3]
 						except:
-							#case_filed_date = required_date.split()[1]
 							case_closed_date = ''
 
 						print 'case_filed_date:\t', case_filed_date
 						print 'case_closed_date:\t', case_closed_date
+						case_details_count += 1
+						print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 
 					else:
 						parties_involved = td.text
-						#print 'parties_involved:\t', parties_involved
-
-					case_details_count += 1
+						print 'parties_involved:\t', parties_involved
 
 			print "***************************************************"
 
@@ -350,7 +353,7 @@ class PacerScrape():
 				print "additional_info_json:\t", additonal_info_json
 				print "***************************************************"
 
-				if additional_info_count >= 5:
+				if additional_info_count >= 1:
 					break
 
 		except:
@@ -368,7 +371,6 @@ class PacerScrape():
 		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
 		logout_response = opener.open(logout_page_url)
 		logout_page_contents = logout_response.read()
-
 
 	def terminate_with_error_message(self):
 		'''
