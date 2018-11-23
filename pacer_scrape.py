@@ -3,24 +3,23 @@ import sys
 import urllib
 import urllib2
 import re
-import cookielib
 from bs4 import BeautifulSoup
 
-# [ Step 1 of 7 ]	:	Hit the first page of PACER training site to set the cookie.
-#  						URL: https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout
+# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
 #
-# [ Step 2 of 7 ]	:	Login to training website.
-#  						Get the appropriate cookie value from the page we get after login.
+# [ Step 2 of 8 ] : Validate the Login.
 #
-# [ Step 3 of 7 ]	:	Validate the login.
+# [ Step 3 of 8 ] : Parse the contents and get cookie.
 #
-# [ Step 4 of 7 ]	:	Query as per the input criteria.
+# [ Step 4 of 8 ] : Query as per the input criteria.
 #
-# [ Step 5 of 7 ]	:	Save the Web page (HTML content) in a folder.
+# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 #
-# [ Step 6 of 7 ]	:	Save the case details.
+# [ Step 6 of 8 ] : Print the page path.
 #
-# [ Step 7 of 7 ]	:	Logout from the website.
+# [ Step 7 of 8 ] : Print the case details.
+#
+# [ Step 8 of 8 ] : Logout from the website.
 
 class SearchCriteria():
 	"""
@@ -34,6 +33,8 @@ class SearchCriteria():
 	"""
 
 	def __init__(self):
+
+		#Initialize the search criteria
 		self.user_type = ''
 		self.all_case_ids = 0
 		self.case_number = ''
@@ -49,7 +50,6 @@ class SearchCriteria():
 		self.middle_name = ''
 		self.type = ''
 		self.exact_matches_only = 0
-
 
 	def print_search_criteria(self):
 		"""
@@ -87,77 +87,83 @@ class PacerScrape():
 				None
 
 		Member functions:
-				1.  login_pacer(self)
-				2.  validate_login_success(self, pacer_session_cookie_value)
-				3.	get_case_details_page_contents(self)
-				4.	save_webpage_with_case_details(self, page_contents)
-				5.	save_webpage_with_case_details(self, page_contents)
-				6.	save_case_details(self, case_details_page_contents)
-				7.	logout(self)
-				8.	terminate_with_error_message(self)
+				1. login_pacer(self)
+				2. get_cookie_value(self, login_page_contents)
+				3. validate_login_success(self, login_page_contents)
+				4. get_case_details_page_contents(self)
+				5. save_webpage_with_case_details(self, page_contents)
+				6. parse_case_details(self, case_details_page_contents)
+				7. logout(self)
+				8. terminate_with_error_message(self)
 	"""
 
 	def __init__(self):
 		"""
-			Default constructor for setting up the opener
+			Default constructor
+
+			Tasks:
+			 1. sets up the opener
+			 2. Initializes login credentials
+			 3. Initializes cookie
 		"""
+
 		self.opener = urllib2.build_opener()
 		urllib2.install_opener(self.opener)
+
+		#Initialize the cookie_value
+		self.pacer_session_cookie_value = ""
+
+		#Initializes the login credentials
+		self.username = 'tr1234'
+		self.password = 'Pass!234'
 
 	def login_pacer(self):
 		"""
 			Used to login into the PACER training website and make related function calls.
 
 			Arguments:
-					self, username, password
+					self
 
 			Returns:
 					pacer_session_cookie_value
 		"""
 
-		username = 'tr1234'
-		password = 'Pass!234'
-
-		credentials = {'login': username, 'key': password}
+		credentials = {'login': self.username, 'key': self.password}
 		encoded_login_credentials = urllib.urlencode(credentials)
 
 		login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
 
-		pacer_session_cookie_value = ""
+		login_page_request = urllib2.Request(login_page)
 
-		# [ Step 1 of 7 ]	:	Hit the cookie page of the PACER training site.
-		#  						URL: https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout
-		try:
-			login_page_request = urllib2.Request(login_page)
+		login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
+		login_page_contents = login_page_response.read()
 
-			login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
-			login_page_contents = login_page_response.read()
+		return login_page_contents
 
-			login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
+	def get_cookie_value(self, login_page_contents):
 
-			#The 'html.parser' is unnecessay since it is Default to BeautifulSoup.
-			#However, it is better to use it to avoid the WARNING.
+		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 
-			#Extract cookie value
-			script_value = login_page_soup.script.get_text()
+		#The 'html.parser' is unnecessay since it is Default to BeautifulSoup.
+		#However, it is better to use it to avoid the WARNING.
 
-			#print script_value
-			pacer_session_cookie_value = re.split( 'PacerSession |, |;', re.findall(r'"(.*?)"', script_value)[0])[0]
+		#Extract cookie value
+		script_value = login_page_soup.script.get_text()
 
-		except:
-			print sys._getframe().f_code.co_name
-			self.terminate_with_error_message()
+		#print script_value
+		self.pacer_session_cookie_value = re.split( 'PacerSession |, |;', re.findall(r'"(.*?)"', script_value)[0])[0]
+
 
 		#Add the required headers
 		self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
 
 		self.opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
 
-		self.opener.addheaders.append(('Cookie', pacer_session_cookie_value ))
+		self.opener.addheaders.append(('Cookie', self.pacer_session_cookie_value ))
 
-		return pacer_session_cookie_value
+		return self.pacer_session_cookie_value
 
-	def validate_login_success(self, pacer_session_cookie_value):
+	def validate_login_success(self, login_page_contents):
 		"""
 			Returns True if login is successful. returns False otherwise.
 
@@ -165,10 +171,15 @@ class PacerScrape():
 					self, username, password
 		"""
 
-		if pacer_session_cookie_value is None or pacer_session_cookie_value == '':
-			return False
+		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 
-		return True
+		login_page_h3_tags = login_page_soup.find_all('h3')
+
+		for h3_tag in login_page_h3_tags:
+			if "U.S. DISTRICT COURT" in str(h3_tag):
+				return True
+
+		return False
 
 	def get_case_details_page_contents(self):
 		"""
@@ -247,12 +258,11 @@ class PacerScrape():
 		file_object = open(page_path, "w+")
 		file_object.write(page_contents)
 		file_object.close()
-		print "page_path:\t", page_path
 		print "***************************************************"
 
 		return page_path
 
-	def save_case_details(self, case_details_page_contents):
+	def parse_case_details(self, case_details_page_contents):
 		"""
 			Saves the case details and Additional info as mentioned in the Schema
 
@@ -260,78 +270,87 @@ class PacerScrape():
 					self, opener, case_details_page_contents
 		"""
 
-		try:
-			case_details_page_soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
+		parsed_case_details_file_object = open("parsed_case_details.txt","r+")
 
-			table_contents = case_details_page_soup.find_all('tr')[:-4570]
+		case_details_page_soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
 
-			#The last 6 rows contain the irrelevant information
-			#Hence they are discarded
+		table_contents = case_details_page_soup.find_all('tr')[:-4570]
 
-			for t_rows in table_contents:
-				t_data = t_rows.find_all('td')
-				case_details_count = 0
+		#The last 6 rows contain the irrelevant information
+		#Hence they are discarded
 
-				for td in t_data:
-					if '-' in td.text:
-						case_number = td.text
-						print "case_number:\t", case_number
+		for t_rows in table_contents:
+			t_data = t_rows.find_all('td')
+			case_details_count = 0
 
-					elif 'filed' in td.text:
-						required_date = td.text
-						try:
-							case_filed_date = required_date.split()[1]
-							case_closed_date = required_date.split()[3]
-						except:	#Hnadling exceptions for cases without closed date
-							case_closed_date = ''
+			for td in t_data:
+				if '-' in td.text:
+					case_number = td.text
+					#print "case_number:\t", case_number
+					parsed_case_details_file_object.write("case_number:\t" + str(case_number) + "\n")
 
-						print "case_filed_date:\t", case_filed_date
-						print "case_closed_date:\t", case_closed_date
-						case_details_count += 1
-						print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+				elif 'filed' in td.text:
+					required_date = td.text
+					try:
+						case_filed_date = required_date.split()[1]
+						parsed_case_details_file_object.write("case_filed_date:\t" + str(case_filed_date) + "\n")
 
-					else:
-						parties_involved = td.text
-						print "parties_involved:\t", parties_involved
+						case_closed_date = required_date.split()[3]
+						parsed_case_details_file_object.write("case_closed_date:\t" + str(case_closed_date) + "\n")
+					except:	#Hnadling exceptions for cases without closed date
+						case_closed_date = ''
+						parsed_case_details_file_object.write("case_closed_date:\t" + str(case_closed_date) + "\n")
 
-			print "***************************************************"
+					#print "case_filed_date:\t", case_filed_date
+					#print "case_closed_date:\t", case_closed_date
+					case_details_count += 1
+					parsed_case_details_file_object.write("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
+					#print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 
-			#Get links of all the cases
-			case_details_url_list = case_details_page_soup.select('td a')
-			case_details_dict = {}
-			case_details_list = []
-			additional_info_count = 0
+				else:
+					parties_involved = td.text
+					#print "parties_involved:\t", parties_involved
+					parsed_case_details_file_object.write("parties_involved:\t" + str(parties_involved) + "\n")
 
-			for case_detail in case_details_url_list:
-				base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
-				current_case_url = case_detail['href'] #Get the link of a particular case
-				current_case_response = self.opener.open(base_url + '/' + current_case_url)
-				current_case_contents = current_case_response.read()
+		print "***************************************************"
+
+		#Get links of all the cases
+		case_details_url_list = case_details_page_soup.select('td a')
+		case_details_dict = {}
+		case_details_list = []
+		additional_info_count = 0
+
+		for case_detail in case_details_url_list:
+			base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+			current_case_url = case_detail['href'] #Get the link of a particular case
+			current_case_response = self.opener.open(base_url + '/' + current_case_url)
+			current_case_contents = current_case_response.read()
 
 
-			    #Generate additional info
-				case_contents_soup = BeautifulSoup(current_case_contents, 'html.parser')
-				additional_info_links_list = case_contents_soup.select('td a')
-				additonal_info_json = {}
+		    #Generate additional info
+			case_contents_soup = BeautifulSoup(current_case_contents, 'html.parser')
+			additional_info_links_list = case_contents_soup.select('td a')
+			additonal_info_json = {}
 
-				for additional_info in additional_info_links_list:
+			for additional_info in additional_info_links_list:
 
-					additional_info_name = additional_info.text
-					additional_info_link = additional_info['href']
-					additonal_info_json[additional_info_name] = additional_info_link
+				additional_info_name = additional_info.text
+				additional_info_link = additional_info['href']
+				additonal_info_json[additional_info_name] = additional_info_link
 
-				additional_info_count += 1
+			additional_info_count += 1
 
-				print "Additional info are:\t"
-				print "additional_info_json:\t", additonal_info_json
-				print "***************************************************"
+			parsed_case_details_file_object.write("Additional info are:\n")
+			parsed_case_details_file_object.write("additional_info_json:\t:" + str(additonal_info_json) + "\n")
 
-				if additional_info_count >= 1:
-					break
+			#print "Additional info are:\t"
+			#print "additional_info_json:\t", additonal_info_json
+			#print "***************************************************"
 
-		except:
-			print "Error occured when saving case details"
-			print "Failed to save some or all of the case details"
+			if additional_info_count >= 1:
+				break
+
+		parsed_case_details_file_object.close()
 
 	def logout(self):
 		"""
