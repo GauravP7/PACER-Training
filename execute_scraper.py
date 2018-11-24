@@ -49,30 +49,7 @@ print "exact_matches_only:\t", search_criteria.exact_matches_only
 
 # [ Step 8 of 9 ] : Print the case details.
 #Get the case revevent information
-case_details_with_additional_info_tuple = pacer_scraper_obj.get_case_details(case_details_page_contents)
-
-#Segregate the tuple to get the case details and additional info
-case_details_list = case_details_with_additional_info_tuple[0]
-additional_info_json = case_details_with_additional_info_tuple[1]
-
-#Print the case details
-print "The addtional info are:"
-for case_details in  case_details_list:
-	case_number = case_details[0]
-	parties_involved = case_details[1]
-	case_filed_date = case_details[2]
-	case_closed_date = case_details[3]
-	print "case_number:\t", case_number
-	print "parties_involved:\t", parties_involved
-	print "case_filed_date:\t", case_filed_date
-	print "case_closed_date:\t", case_closed_date
-	print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-
-#Print the additional information of the cases
-print "The addtional info are:"
-for additional_info in additional_info_json:
-	print additional_info
-	print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+pacer_scraper_obj.get_case_details(case_details_page_contents)
 
 # [ Step 9 of 9 ] : Logout from the website.
 pacer_scraper_obj.logout()

@@ -217,63 +217,40 @@ class PacerScrape():
 					self, opener, case_details_page_contents
 		"""
 
-		case_details_tuple = ()
-		case_details_list = []
-		case_details_page_soup =  BeautifulSoup(case_details_page_contents, 'html.parser')
+		soup = BeautifulSoup(case_details_page_contents, 'html.parser')
+		table_contents = soup.find_all('tr')
+		length = len(table_contents) # - (len(table_contents) - 1)
+		additional_info_json = {}
+		additional_info_links_list = []
+		for case_details_index in range(length):
+			#try:
+			base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
+			all_td_tags = table_contents[case_details_index].find_all('td')
+			additional_info_link = all_td_tags[0].a['href']
+			case_number = all_td_tags[0].a.text
+			parties_involed = all_td_tags[1].text
+			required_dates = all_td_tags[2].text
+			#print additional_info_link
+			#print case_number
+			#print parties_involed
+			#print required_dates
+			additional_info_page_response = self.opener.open(base_url +additional_info_link )
+			additional_info_page_contents = additional_info_page_response.read()
 
-		#The last 6 rows contain the irrelevant information
-		#Hence they are discarded
-		table_contents = case_details_page_soup.find_all('tr') #[:-6]
-		for t_rows in table_contents:
-			t_data = t_rows.find_all('td')
-			case_details_count = 0
-			for td in t_data:
-				if '-' in td.text:
-					case_number = td.text
-				elif 'filed' in td.text:
-					required_date = td.text
-					case_filed_date = required_date.split()[1]
-
-					#Check for cases without closed date
-					if len(required_date.split()) > 3:
-						case_closed_date = required_date.split()[3]
-					else:
-						case_closed_date = ''
-					case_details_tuple = ()
-					case_details_tuple = (case_number, parties_involved, case_filed_date, case_closed_date)
-
-					#Tuple packing
-					case_details_list.append(case_details_tuple)
-					case_details_count += 1
-				else:
-					parties_involved = td.text
-
-		#Get the additional info of all the cases
-		#Get links of all the cases
-		case_details_url_list = case_details_page_soup.select('td a')
-		additional_info_list = []
-		additional_info_count = 0
-		for case_detail in case_details_url_list:
-			base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
-			current_case_url = case_detail['href'] #Get the link of a particular case
-			current_case_response = self.opener.open(base_url + '/' + current_case_url)
-			current_case_contents = current_case_response.read()
-
-		    #Generate additional info
-			case_contents_soup = BeautifulSoup(current_case_contents, 'html.parser')
+			#Generate additional info
+			case_contents_soup = BeautifulSoup(additional_info_page_contents)
 			additional_info_links_list = case_contents_soup.select('td a')
-			additonal_info_json = {}
-
-		    #Create additional info JSON data structure
 			for additional_info in additional_info_links_list:
 				additional_info_name = additional_info.text
 				additional_info_link = additional_info['href']
-				additonal_info_json[additional_info_name] = additional_info_link
-			additional_info_count += 1
-			additional_info_list.append(additonal_info_json)
-			if additional_info_count >= 2:
-				break
-		return (case_details_list, additional_info_list)
+				additional_info_json[additional_info_name] = additional_info_link
+				
+			#print additional_info_json
+			#print '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+			#tuple packing
+			required_case_details = (case_number, parties_involed, required_dates, additional_info_json)
+			# except:
+			# 	continue
 
 	def logout(self):
 		"""
@@ -295,4 +272,4 @@ class PacerScrape():
 
 		print "The program is terminated since the login was unsuccessful."
 		print "Please check the credentials or your internet connection and try again"
-		exit(1)
+		exit(0)
