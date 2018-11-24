@@ -223,7 +223,7 @@ class PacerScrape():
 
 		#The last 6 rows contain the irrelevant information
 		#Hence they are discarded
-		table_contents = case_details_page_soup.find_all('tr')[:-6]
+		table_contents = case_details_page_soup.find_all('tr') #[:-6]
 		for t_rows in table_contents:
 			t_data = t_rows.find_all('td')
 			case_details_count = 0
@@ -295,4 +295,4 @@ class PacerScrape():
 
 		print "The program is terminated since the login was unsuccessful."
 		print "Please check the credentials or your internet connection and try again"
-		exit(0)
+		exit(1)
