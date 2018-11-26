@@ -1,6 +1,5 @@
 import pacer_scrape as pacer_scraper
 
-#Instantiate the PacerScrape class
 pacer_scraper_obj = pacer_scraper.PacerScrape()
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
@@ -9,7 +8,8 @@ login_page_contents = pacer_scraper_obj.login_pacer()
 # [ Step 2 of 9 ] : Validate the Login.
 is_login_validate_success = pacer_scraper_obj.validate_login_success(login_page_contents)
 
-if not is_login_validate_success:	#Terminate the program if validation is unsuccessful
+#Terminate the program if validation is unsuccessful
+if not is_login_validate_success:
 	pacer_scraper_obj.terminate_with_error_message()
 
 else:
@@ -48,8 +48,23 @@ print "type:\t", search_criteria.type
 print "exact_matches_only:\t", search_criteria.exact_matches_only
 
 # [ Step 8 of 9 ] : Print the case details.
-#Get the case revevent information
-pacer_scraper_obj.get_case_details(case_details_page_contents)
+case_details_list = pacer_scraper_obj.get_case_details(case_details_page_contents)
+
+#Extract indivisual tuples from the list and
+#Unpack all the tuples
+for case_details in case_details_list:
+	required_fields = case_details
+	case_number = required_fields[0]
+	parties_involed = required_fields[1]
+	case_filed_date = required_fields[2]
+	case_closed_date = required_fields[3]
+	additional_info_json = required_fields[4]
+	print "case_number:\t", case_number
+	print "parties_involed:\t", parties_involed
+	print "case_filed_date:\t", case_filed_date
+	print "case_closed_date:\t", case_closed_date
+	print "case_closed_date:\t", case_closed_date
+	print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 
 # [ Step 9 of 9 ] : Logout from the website.
 pacer_scraper_obj.logout()

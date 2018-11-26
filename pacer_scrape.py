@@ -217,40 +217,65 @@ class PacerScrape():
 					self, opener, case_details_page_contents
 		"""
 
-		soup = BeautifulSoup(case_details_page_contents, 'html.parser')
-		table_contents = soup.find_all('tr')
-		length = len(table_contents) # - (len(table_contents) - 1)
+		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
+		table_contents = case_details_soup.find_all('tr')
+		table_contents_length = len(table_contents) - (len(table_contents) - 10)
+		case_details_list = []
 		additional_info_json = {}
 		additional_info_links_list = []
-		for case_details_index in range(length):
-			#try:
+		for case_details_index in range(table_contents_length):
 			base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 			all_td_tags = table_contents[case_details_index].find_all('td')
-			additional_info_link = all_td_tags[0].a['href']
-			case_number = all_td_tags[0].a.text
-			parties_involed = all_td_tags[1].text
-			required_dates = all_td_tags[2].text
-			#print additional_info_link
-			#print case_number
-			#print parties_involed
-			#print required_dates
+
+			#There results of memory profiling for the if-else blocks v. try-except
+			#are as follows:
+			############################
+			#Time Taken (in seconds):
+			#	Without error :
+			#		if-else: 0.713079
+			#		try-except: 0.674906
+			#	With error:
+			#		if-else: 0.569615
+			#		try-except: 0.542591
+			############################
+			#Memory Consumed (in Bytes) per line:
+			#	if-else: 56.867
+			#	try-except: 59.004
+			if len(all_td_tags) > 2:
+
+				#Handling the extra 'tr' and 'td' tags that are unnecessay
+				if all_td_tags[0].a:
+					additional_info_link = all_td_tags[0].a['href']
+					case_number = all_td_tags[0].a.text
+				else:
+					continue
+				parties_involed = all_td_tags[1].text
+				required_dates = all_td_tags[2].text
+				case_filed_date = required_dates.split()[1]
+				#Handling the cases that are not closed
+				if len(required_dates.split()) > 3:
+					case_closed_date = required_dates.split()[3]
+				else:
+					case_closed_date = ''
+			else:
+				continue
 			additional_info_page_response = self.opener.open(base_url +additional_info_link )
 			additional_info_page_contents = additional_info_page_response.read()
+			additional_info_page_response.close()
 
 			#Generate additional info
-			case_contents_soup = BeautifulSoup(additional_info_page_contents)
+			case_contents_soup = BeautifulSoup(additional_info_page_contents, 'html.parser')
 			additional_info_links_list = case_contents_soup.select('td a')
 			for additional_info in additional_info_links_list:
 				additional_info_name = additional_info.text
 				additional_info_link = additional_info['href']
 				additional_info_json[additional_info_name] = additional_info_link
-				
-			#print additional_info_json
-			#print '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
-			#tuple packing
-			required_case_details = (case_number, parties_involed, required_dates, additional_info_json)
-			# except:
-			# 	continue
+
+			#pack all the required case variables into a tuple
+			#And append them to a list, which is then returned and unpacked
+			case_details_tuple = (case_number, parties_involed, case_filed_date, case_closed_date, additional_info_json)
+			case_details_list.append(case_details_tuple)
+		return case_details_list
 
 	def logout(self):
 		"""
