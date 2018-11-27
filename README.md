@@ -11,15 +11,13 @@
 9. Created the Implementation Design Document (IDD) with the functional and Non functional requirements of the program.[7]
 10. Created a detailed database schema with the Entity-Relationship diagram and Relational-Schema diagram, along with the code f for the tables of the database.[8]
 11. Set up the virtual environment and Git in my local sustem.
-12. Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
-13. Learnt how to login and query the case details from the PACER training site.
-14. Learnt to pack the case details using the concept of tuple packing and unpacking.
-15. Refactored the code by instantiatiing it (adding the 'class' representation and hence implemented the OOP approach.
-16. Split the code into two files - one file contained the class definitions wirh the required mwthods and the other file contained the flow of excution of the program as per the detailed steps.
-17. Performed memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
-18. Implemented the earlier designed schema and created the database.
-19. Stored the extracted case details into the database.
-20. Implemented the Django models and views to Displayed the stored data from the database.
+12. Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.[9]
+13. Learnt how to login and query the case details from the PACER training site.[10]
+14. Learnt to pack the case details using the concept of tuple packing and unpacking.[11]
+15. Performed memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs. [11]
+16. Implemented the earlier designed schema and created the database.
+17. Stored the extracted case details into the database.
+18. Implemented the Django models and views to Displayed the stored data from the database.[13]
 
 [1] https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4 </br>
 [2] https://docs.google.com/document/d/1-huvzYveJbJf7V7uZTPlMqaHZKGl8jgrnFZXlKqNTLw/edit?usp=sharing </br>
@@ -29,3 +27,8 @@
 [6] https://drive.google.com/open?id=1nEWFdEo7VDDXWd3XjeZj_r5qRbF6g4uGOuQp6CI5TCM </br>
 [7] https://drive.google.com/open?id=1zCks_FfndBEsl40klfWjt7jPcW3yzwjtE2l6RTlXpaM </br>
 [8] https://drive.google.com/open?id=1Uest4FG4ZzCfu92RuIX-fnYJVV-WZYwwkYo-apzijY4 </br>
+[9] https://github.com/gaurav-uc/pacer-training/blob/master/scraping-test/pacer_scrape.py <br/>
+[10] https://github.com/gaurav-uc/pacer-training/blob/review/scraping-test/pacer_scrape.py <br/>
+[11] https://github.com/gaurav-uc/pacer-training/tree/feat/tuple-packing-revised/scraping-test <br/>
+[12] https://github.com/gaurav-uc/pacer-training/tree/feat/seperate-files </br>
+[13] https://github.com/gaurav-uc/pacer-training/tree/scraper-with-django-27-11
