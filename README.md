@@ -21,12 +21,11 @@
 19. Stored the extracted case details into the database.
 20. Implemented the Django models and views to Displayed the stored data from the database.
 
-[1] https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4
-[2] https://docs.google.com/document/d/1-huvzYveJbJf7V7uZTPlMqaHZKGl8jgrnFZXlKqNTLw/edit?usp=sharing
-[3] https://drive.google.com/open?id=1Gs21dubapRvHp3rTizJ-sZMuatL7vSnQhbfM_qc3JJw
-[4] https://drive.google.com/open?id=1HH7Qb6kFs15ynwb9laOwn4PIdrXbrwcemBwtJXfc8GM
-[5] https://drive.google.com/open?id=1_2-kvPoVJ4VHzvykriE2rpepq-gqX0F2_GhZcbZJzXc
-[6] https://drive.google.com/open?id=1nEWFdEo7VDDXWd3XjeZj_r5qRbF6g4uGOuQp6CI5TCM
-[7] https://drive.google.com/open?id=1zCks_FfndBEsl40klfWjt7jPcW3yzwjtE2l6RTlXpaM
-[8] https://drive.google.com/open?id=1Uest4FG4ZzCfu92RuIX-fnYJVV-WZYwwkYo-apzijY4
-
+[1] https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4 </br>
+[2] https://docs.google.com/document/d/1-huvzYveJbJf7V7uZTPlMqaHZKGl8jgrnFZXlKqNTLw/edit?usp=sharing </br>
+[3] https://drive.google.com/open?id=1Gs21dubapRvHp3rTizJ-sZMuatL7vSnQhbfM_qc3JJw </br>
+[4] https://drive.google.com/open?id=1HH7Qb6kFs15ynwb9laOwn4PIdrXbrwcemBwtJXfc8GM </br>
+[5] https://drive.google.com/open?id=1_2-kvPoVJ4VHzvykriE2rpepq-gqX0F2_GhZcbZJzXc </br>
+[6] https://drive.google.com/open?id=1nEWFdEo7VDDXWd3XjeZj_r5qRbF6g4uGOuQp6CI5TCM </br>
+[7] https://drive.google.com/open?id=1zCks_FfndBEsl40klfWjt7jPcW3yzwjtE2l6RTlXpaM </br>
+[8] https://drive.google.com/open?id=1Uest4FG4ZzCfu92RuIX-fnYJVV-WZYwwkYo-apzijY4 </br>
