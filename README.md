@@ -1,3 +1,4 @@
+#Learnings for the project
 1. Python is an interpreted, object-oriented, high-level programming language with dynamic semantics.
 
 2. MySQL provides various storage engines such as MyISAM, InnoDB, MERGE, MEMORY (HEAP), ARCHIVE, CSV, FEDERATED.
