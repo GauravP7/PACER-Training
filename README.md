@@ -33,14 +33,14 @@
   <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt </li>
   <li>Run the <b>execute_scraper.py</b> file to login, fetch and store the case details into the database</li>
   <li>Navigate to django-test/mysite directory and run the following command:
-    '''python
-        >>>python manage.py runserver
-        0 errors found
-        Django version 1.4.22, using settings 'mysite.settings'
-        Development server is running at http://127.0.0.1:8000/
-        Quit the server with CONTROL-C.
-    '''
     </li>
   <li>Open http://127.0.0.1:8000/ and see the Case details being print on the server</li>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
+        ```
+        >>>python manage.py runserver<br/>
+        0 errors found<br/>
+        Django version 1.4.22, using settings 'mysite.settings'<br/>
+        Development server is running at http://127.0.0.1:8000/<br/>
+        Quit the server with CONTROL-C.<br/>
+    ```
