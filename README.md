@@ -31,7 +31,13 @@
      # [ Step 8 of 9 ] : Print the case details.</p> 
      # [ Step 9 of 9 ] : Logout from the website.</p>
      </code>
-  
+ <hr/>
+  <h3>Django installation</h3>
+This Project is based on the Django version 1.4.22 <br/>
+Django can be installed using either pip or easy_install as follows:<br/>
+<code>pip install django==1.4.22</code>
+<code>easy_install django==1.4.22</code>
+ <hr/>
   <h3>Usage</h3>
     <ol>
   <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt. <br>
