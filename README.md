@@ -1,8 +1,9 @@
 <h1>Extracting case information from pacer</h1>
 
 <p> The PACER is an electronic service provided by the government of The United States of America to access the court records (case details) of the country. </p>
-<h3>Learnings</h3>
 <hr/>
+
+<h3>Learnings</h3>
 <ul>
   <li>
     Learnt about <a href="https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4">Python</a>, difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class, tuple packing and unpacking, memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
@@ -15,28 +16,23 @@
   <li>Set up the virtual environment and Git in my local system.</li>
   <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
   </li>
+  </ul>
+  
+    <hr/>
+    <h3>Steps Followed</h3>
+      <p>[ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</p>
+      <p>[ Step 2 of 9 ] : Validate the Login.</p>
+      <p>[ Step 3 of 9 ] : Parse the contents and get cookie.</p>
+      <p>[ Step 4 of 9 ] : Query as per the input criteria.</p>
+      <p>[ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.</p>
+      <p>[ Step 6 of 9 ] : Print the page path.</p>
+      <p>[ Step 7 of 9 ] : Print the Search Criteria.</p>
+      <p>[ Step 8 of 9 ] : Print the case details.</p> 
+      <p>[ Step 9 of 9 ] : Logout from the website.</p>
+  </li>
     </li>
   <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
   </ul>
- 
-   <hr/>
-    <h3>Steps Followed</h3>
- 
-    <p><code># [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</code></p>
-    <pre>
-    <code>
-credentials = {'login': self.username, 'key': self.password}
-encoded_login_credentials = urllib.urlencode(credentials)
-login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
-login_page_request = urllib2.Request(login_page)
-login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
-login_page_contents = login_page_response.read()
-</code>
-</pre>
-    
-    <p><code># [ Step 2 of 9 ] : Validate the Login.</code></p>
-    
-<hr/>
   <h3>Usage</h3>
     <ol>
   <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt </li>
