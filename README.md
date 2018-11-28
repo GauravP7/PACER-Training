@@ -1,6 +1,6 @@
 <h1>Steps followed for pacer training site extraction:</h1>
 
-<h3> Scrape the PACER training website and collect case related information </h3>
+<p> Scrape the PACER training website and collect case related information </p>
 <hr/>
 
 <ul>
