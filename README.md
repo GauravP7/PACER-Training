@@ -9,10 +9,20 @@
   </li>
   <li>Learnt about Celery Overview, learnt about Django overview, features and working with the Model-View-Template architecture. Learnt about MySQL - its different engine types, Collation and Character set, difference between Text and JSON datatypes. Brushed up on different normal forms in DBMS and learnt to create a normalized database.</li>
   <li>Created the Requirements analysis document (RAD) which should include the introduction, purpose scope, objective and success criteria of the project.</li>
-  <li>Created the Functional Design Document (FDD) that includes the abilities the program must possess: ... </li>
+  <li>Created the Functional Design Document (FDD) that includes the abilities the program must possess: the ability to fetch data based on the different search criteria, ability to store case details, ability to store dta non redundant manner by removing the unwanted characters</li>
   <li>Created the Implementation Design Document (IDD) that includes functional and Non functional requirements of the program.</li>
   <li>Created a detailed database schema with the Entity-Relationship diagram and Relational-Schema diagram, along with the code for the tables of the database.</li>
-  <li>Set up the virtual environment and Git in my local sustem.</li>
-  <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site. ... give the entire algorithm... steps...</li>
+  <li>Set up the virtual environment and Git in my local system.</li>
+  <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
+      <p>[ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</p>
+      <p>[ Step 2 of 9 ] : Validate the Login.</p>
+      <p>[ Step 3 of 9 ] : Parse the contents and get cookie.</p>
+      <p>[ Step 4 of 9 ] : Query as per the input criteria.</p>
+      <p>[ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.</p>
+      <p>[ Step 6 of 9 ] : Print the page path.</p>
+      <p>[ Step 7 of 9 ] : Print the Search Criteria.</p>
+      <p>[ Step 8 of 9 ] : Print the case details.</p> 
+      <p>[ Step 9 of 9 ] : Logout from the website.</p>
+  </li>
     </li>
   <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
