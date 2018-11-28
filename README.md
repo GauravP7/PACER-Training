@@ -44,7 +44,7 @@
     <br/>
   </li><br/>
   <li>Navigate to django-test/mysite directory and run the server.<br/><code>python manage.py runserver</code>
-    </li>
+    </li><br/>
   <li>Open the server link http://127.0.0.1:8000/ and see the Case details being print on the server</li><br/>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
