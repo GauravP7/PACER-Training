@@ -37,8 +37,8 @@
   <li>Open http://127.0.0.1:8000/ and see the Case details being print on the server</li>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
-        ```
-        >>>python manage.py runserver<br/>
+    ```
+        <br/>>>>python manage.py runserver<br/>
         0 errors found<br/>
         Django version 1.4.22, using settings 'mysite.settings'<br/>
         Development server is running at http://127.0.0.1:8000/<br/>
