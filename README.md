@@ -6,7 +6,7 @@
 <h3>Learnings</h3>
 <ul>
   <li>
-    Learnt about <a href="https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4">Python</a>, difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class, tuple packing and unpacking, memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
+    <a href="https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4">Learnt about Python</a>, difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class, tuple packing and unpacking, memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
   </li>
   <li>Learnt about Celery Overview, learnt about Django overview, features and working with the Model-View-Template architecture. Learnt about MySQL - its different engine types, Collation and Character set, difference between Text and JSON datatypes. Brushed up on different normal forms in DBMS and learnt to create a normalized database.</li>
   <li>Created the Requirements analysis document (RAD) which should include the introduction, purpose scope, objective and success criteria of the project.</li>
@@ -19,6 +19,7 @@
 </ul>
 
 <h3>Steps Followed</h3>
+<hr/>
     <code>
      # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</p>
      # [ Step 2 of 9 ] : Validate the Login.</p>
@@ -33,12 +34,19 @@
   
   <h3>Usage</h3>
     <ol>
-  <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt </li>
-  <li>Run the <b>execute_scraper.py</b> file to login, fetch and store the case details into the database</li>
-  <li>Navigate to django-test/mysite directory and run <code>python manage.py runserver</code>
+  <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt. <br>
+    <code>$mysql -u root -p</code><br/>
+    <code>Enter password:</code><br/>
+    <code>mysql>source /home/mydir/save_case_details.sql</code>
+  </li>
+  <li>Run the <b>execute_scraper.py</b> file to login, fetch and store the case details into the database.<br/>
+    <code>$python execute_scraper.py</code>
+  </li>
+  <li>Navigate to django-test/mysite directory and run the server.<br/><code>python manage.py runserver</code>
     </li>
   <li>Open the server link http://127.0.0.1:8000/ and see the Case details being print on the server</li>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
+    ![Image of output](https://github.com/gaurav-uc/pacer-training/blob/master/scraping-test/django_output.png)
     <br/>
   <b>Note:</b> The port number :800 may change depending on the machine. <br/>You can run the program in other ports as well <br/>e.g. <code>python manage.py runserver 8090</code> will run the server on http://127.0.0.1:8090/
