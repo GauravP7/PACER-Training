@@ -1,11 +1,8 @@
 <h1>Extracting case information from pacer</h1>
 
 <p> The PACER is an electronic service provided by the government of The United States of America to access the court records (case details) of the country. </p>
-<hr/>
-
 <h3>Learnings</h3>
 <hr/>
-<h5>Steps Followed</h5>
 <ul>
   <li>
     Learnt about <a href="https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4">Python</a>, difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class, tuple packing and unpacking, memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
@@ -17,12 +14,28 @@
   <li>Created a detailed database schema with the Entity-Relationship diagram and Relational-Schema diagram, along with the code for the tables of the database.</li>
   <li>Set up the virtual environment and Git in my local system.</li>
   <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
-    
   </li>
     </li>
   <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
   </ul>
-  
+ 
+   <hr/>
+    <h3>Steps Followed</h3>
+ 
+    <p><code># [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</code></p>
+    <pre>
+    <code>
+credentials = {'login': self.username, 'key': self.password}
+encoded_login_credentials = urllib.urlencode(credentials)
+login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
+login_page_request = urllib2.Request(login_page)
+login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
+login_page_contents = login_page_response.read()
+</code>
+</pre>
+    
+    <p><code># [ Step 2 of 9 ] : Validate the Login.</code></p>
+    
 <hr/>
   <h3>Usage</h3>
     <ol>
