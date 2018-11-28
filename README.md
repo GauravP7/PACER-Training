@@ -37,4 +37,5 @@
   <li>Open the server link http://127.0.0.1:8000/ and see the Case details being print on the server</li>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
-  >Note: The port number :800 may change depending on the machine. You can run the program in other ports as well e.g. <code>python manage.py runserver 8090</code> will run the server on http://127.0.0.1:8090/
+    <br/>
+  `<b>Note: The port number :800 may change depending on the machine. <br/>You can run the program in other ports as well <br/>e.g. <code>python manage.py runserver 8090</code> will run the server on http://127.0.0.1:8090/`
