@@ -1,6 +1,9 @@
 from django.template import Context, loader
 from django.http import HttpResponse
 from my_app.models import CaseDetails
+import cv2
+
+cv2.namedWindow("test")
 
 def index(request):
     case_details_list = CaseDetails.objects.all()
