@@ -29,8 +29,7 @@
      # [ Step 6 of 9 ] : Print the page path.</p>
      # [ Step 7 of 9 ] : Print the Search Criteria.</p>
      # [ Step 8 of 9 ] : Print the case details.</p> 
-     # [ Step 9 of 9 ] : Logout from the website.</p>
-     </code>
+     # [ Step 9 of 9 ] : Logout from the website.</p></code>
  <hr/>
   <h3>Django installation</h3>
 This Project is based on the Django version 1.4.22 <br/>
