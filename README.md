@@ -1,6 +1,6 @@
 <h1>Extracting case information from pacer</h1>
 
-<p> Pacer is a ... . The steps followed to extract case information from Pacer are listed below : </p>
+<p> <a href="https://www.pacer.gov/announcements/general/train.html">Pacer</a> is an electronic public access  <a href="https://en.wikipedia.org/wiki/PACER_(law)">service of United States federal court documents</a>. The case details provided in the website are fetched and stored in the local database. <br/>The steps followed to extract case information from Pacer are listed below : </p>
 <hr/>
 
 <ul>
