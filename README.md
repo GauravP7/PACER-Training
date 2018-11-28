@@ -1,4 +1,4 @@
-﻿### Steps followed for pacer training site extraction:
+### Steps followed for pacer training site extraction:
 
 1. Learnt about Python - Difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class.[1]
 2. Learnt about Celery - Overview.[1]
