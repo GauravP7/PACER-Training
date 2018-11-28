@@ -50,7 +50,7 @@ Django can be installed using either pip or easy_install as follows:
   </li><br/>
   <li>Navigate to django-test/mysite directory and run the server.<br/><code>$python manage.py runserver</code>
     </li><br/>
-  <li>Open the server link http://127.0.0.1:8000/ and see the Case details being print on the server</li><br/>
+  <li>Browse the URL http://127.0.0.1:8000/index/ and you can see the case details being print on the server</li><br/>
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
     <br/>
