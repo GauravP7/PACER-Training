@@ -32,6 +32,6 @@
     <ol>
   <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt </li>
   <li>Run the <b>execute_scraper.py</b> file to login, fetch and store the case details into the database</li>
-  <li>Navigate to django-test/mysite directory and run <b>python manage.py runserver<b> and open the server link</b>
+  <li>Navigate to django-test/mysite directory and run <b>python manage.py runserver</b> and open the server link
   <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
     </ol>
