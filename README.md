@@ -19,7 +19,15 @@
   <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
      <code>
       <p>#[ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</p>
+       
       <p>#[ Step 2 of 9 ] : Validate the Login.</p>
+      
+      credentials = {'login': self.username, 'key': self.password}<br/>
+      encoded_login_credentials = urllib.urlencode(credentials)<br/>
+      login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'<br/>
+      login_page_request = urllib2.Request(login_page)<br/>
+      login_page_response = self.opener.open(login_page_request , encoded_login_credentials)<br/>
+      login_page_contents = login_page_response.read()<br/>
       <p>#[ Step 3 of 9 ] : Parse the contents and get cookie.</p>
       <p>#[ Step 4 of 9 ] : Query as per the input criteria.</p>
       <p>#[ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.</p>
