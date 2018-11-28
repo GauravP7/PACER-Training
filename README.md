@@ -3,6 +3,7 @@
 <p> The PACER is an electronic service provided by the government of The United States of America to access the court records (case details) of the country. </p>
 <hr/>
 
+<h3>Steps Followed</h3>
 <ul>
   <li>
     Learnt about <a href="https://drive.google.com/open?id=1TW6W8uttszW6XMdM2E5MCk092pm_-AJqQ9JYQPi7Ln4">Python</a>, difference with other languages, differnce between tuples and lists, difference between a method and a function, difference between a parameter and an argument, GIL, multithreading, Regex, copy package and old and new style class, tuple packing and unpacking, memory profiling of if-else v. try-catch block to compare the memory consumption and time taken by these two programming constructs.
@@ -26,3 +27,11 @@
   </li>
     </li>
   <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
+  </ul>
+  <h3>Usage</h3>
+    <ol>
+  <li>Run the SQL schema file from scraping-test/<b>save_case_details.sql</b> in the MySQL prompt </li>
+  <li>Run the <b>execute_scraper.py</b> file to login, fetch and store the case details into the database</li>
+  <li>Navigate to django-test/mysite directory and run <b>python manage.py runserver<b> and open the server link</b>
+  <li>By now you will be able to see all the case details you have saved into the database from the PACER training website</li>
+    </ol>
