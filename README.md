@@ -16,10 +16,9 @@
   <li>Set up the virtual environment and Git in my local system.</li>
   <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
 <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
-  </ul>
-  
-    <hr/>
-    <h3>Steps Followed</h3>
+</ul>
+
+<h3>Steps Followed</h3>
     <code>
      # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.</p>
      # [ Step 2 of 9 ] : Validate the Login.</p>
