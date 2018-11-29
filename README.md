@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-﻿<h1>Extracting case information from pacer</h1>
-=======
 <h1>Extracting case information from pacer</h1>
->>>>>>> a8c38146b7c942427443cd6025c433be70b173a8
 
 <p> The PACER is an electronic service provided by the government of The United States of America to access the court records (case details) of the country. </p>
 <hr/>
