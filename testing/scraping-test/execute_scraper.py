@@ -29,7 +29,7 @@ page_path = pacer_scraper_obj.save_webpage_with_case_details(case_details_page_c
 database_connection = MySQLdb.connect(host= "",
 										user="root",
 										password="Code@mispl",
-										db="pacer_case_details")
+										db="learn_django")
 connection_cursor = database_connection.cursor()
 try:
 	path_insert_query = """INSERT INTO page_content(page_path) VALUES(%s)"""
