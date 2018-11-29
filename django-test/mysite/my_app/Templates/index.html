@@ -5,6 +5,70 @@
 <body style="background-color:#FFEBCD">
 <h1 align="center"> Case Details from PACER </h1>
 <hr>
+
+<!--Search Criteria-->
+<h3 align="center"> Search Criteria Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Search Criteria ID</th>
+		<th>Case Number</th>
+		<th>Case Status</th>
+		<th>Case Filed Date</th>
+		<th>Case Closed Date</th>
+		<th>From Last Entry Date</th>
+		<th>To Last Entry Date</th>
+		<th>Nature of suit</th>
+		<th>Cause of action</th>
+		<th>Last Name</th>
+		<th>First Name</th>
+		<th>Middle Name</th>
+		<th>Type</th>
+		<th>Exact matches only</th>
+	</tr>
+	{% if search_criteria_list %}
+	{% for search_criteria in search_criteria_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ search_criteria.search_criteria_id }}</td>
+		<td>{{ search_criteria.case_number }}</td>
+		<td>{{ search_criteria.case_status }}</td>
+		<td>{{ search_criteria.from_field_date }}</td>
+		<td>{{ search_criteria.to_field_date }}</td>
+		<td>{{ search_criteria.from_last_entry_date }}</td>
+		<td>{{ search_criteria.to_last_entry_date }}</td>
+		<td>{{ search_criteria.nature_of_suit }}</td>
+		<td>{{ search_criteria.cause_of_action }}</td>
+		<td>{{ search_criteria.last_name }}</td>
+		<td>{{ search_criteria.first_name }}</td>
+		<td>{{ search_criteria.middle_name }}</td>
+		<td>{{ search_criteria.type }}</td>
+		<td>{{ search_criteria.exact_matches_only }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
+<!--Page Content-->
+<h3 align="center">Page Content Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Page Content ID</th>
+		<th>Page Path</th>
+	</tr>
+	{% if page_content_list %}
+	{% for page_content in page_content_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ page_content.page_content_id }}</td>
+		<td>{{ page_content.page_path }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
+<!--Case Details-->
 <h3 align="center"> Case Details Table:</h3>
 <center>
 <table border=1 cellpadding=10>
@@ -16,17 +80,39 @@
 		<th>Case Closed Date</th>
 	</tr>
 	{% if case_details_list %}
-	{% for poll in case_details_list %}
+	{% for case_details in case_details_list %}
 	<tr style="background-color:#BA55D3;color:#FFF;">
-		<td>{{ poll.case_id }}</td>
-		<td>{{poll.case_number}}</td>
-		<td>{{poll.parties_involved}}</td>
-		<td>{{poll.case_filed_date}}</td>
-		<td>{{poll.case_closed_date}}</td>
+		<td>{{ case_details.case_id }}</td>
+		<td>{{ case_details.case_number }}</td>
+		<td>{{ case_details.parties_involved }}</td>
+		<td>{{ case_details.case_filed_date }}</td>
+		<td>{{ case_details.case_closed_date }}</td>
 	</tr>
 {% endfor %}
 {% endif %}
 </table>
 </center>
+
+<!--Addtional Information-->
+<h3 align="center">Addtional Information Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Info ID</th>
+		<th>Case Number</th>
+		<th>Additional Info JSON</th>
+	</tr>
+	{% if additional_info_list %}
+	{% for additional_info in additional_info_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ additional_info.info_id }}</td>
+		<td>{{ additional_info.case.case_number }}</td>
+		<td>{{ additional_info.additional_info_json }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
 </body>
 </html>
