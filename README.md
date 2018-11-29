@@ -55,3 +55,10 @@ Django can be installed using either pip or easy_install as follows:
     </ol>
     <br/>
   <b>Note:</b>&nbsp;&nbsp;&nbsp;&nbsp;The port number :8000 may change depending on the machine. You can run the program in other ports as well.&nbsp;&nbsp;&nbsp;&nbsp;<br/>e.g. <code>$python manage.py runserver 8090</code> will run the server on http://127.0.0.1:8090/
+  
+  <hr/>
+  <h3>Output on Django front end</h3>
+ 
+  ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_1.png)
+  
+  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_2.png)
