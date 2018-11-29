@@ -53,7 +53,7 @@
   <hr/>
   <h3>Output</h3>
 
- ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_1.png)
+ ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/images/django_op_1.png)
   
   
-  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_2.png)
+  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/images/django_op_2.png)
