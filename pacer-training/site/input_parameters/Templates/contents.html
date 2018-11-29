@@ -1,0 +1,29 @@
+<html>
+<head>
+	<title>Page Contents</title>
+</head>
+<body style="background-color:#FFEBCD">
+<h1 align="center"> Case Details from PACER </h1>
+<hr>
+
+<!--Page Content-->
+<h3 align="center">Page Content Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Page Content ID</th>
+		<th>Page Path</th>
+	</tr>
+	{% if page_content_list %}
+	{% for page_content in page_content_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ page_content.page_content_id }}</td>
+		<td>{{ page_content.page_path }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
+</body>
+</html>

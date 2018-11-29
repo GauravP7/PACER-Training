@@ -202,7 +202,7 @@ class PacerScrape():
 					page_path
 		"""
 
-		saved_webpage_file_path = '/home/mis/Training/Contents/'
+		saved_webpage_file_path = '/home/mis/DjangoProject/pacer-training/extractor/Contents/'
 		saved_webpage_file_name = 'case_details.html'
 		page_path = saved_webpage_file_path + saved_webpage_file_name
 		file_object = open(page_path, "w+")

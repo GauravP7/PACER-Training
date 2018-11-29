@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 ﻿<h1>Extracting case information from pacer</h1>
-=======
-<h1>Extracting case information from pacer</h1>
->>>>>>> a8c38146b7c942427443cd6025c433be70b173a8
 
 <p> The PACER is an electronic service provided by the government of The United States of America to access the court records (case details) of the country. </p>
 <hr/>
@@ -57,7 +53,7 @@
   <hr/>
   <h3>Output</h3>
 
- ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_1.png)
+ ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/images/django_op_1.png)
   
   
-  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/Images/Django_op_2.png)
+  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer-training/images/django_op_2.png)

@@ -107,7 +107,7 @@ ROOT_URLCONF = 'mysite.urls'
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
 TEMPLATE_DIRS = (
-    '/home/mis/DjangoProject/django-test/mysite/my_app/Templates',
+    '/home/mis/DjangoProject/pacer-training/site/input_parameters/Templates',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -124,7 +124,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'my_app'
+    'input_parameters',
+    'output_parameters',
 )
 
 # A sample logging configuration. The only tangible logging

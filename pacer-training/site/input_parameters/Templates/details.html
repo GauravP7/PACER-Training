@@ -1,0 +1,35 @@
+<html>
+<head>
+	<title>Case Details</title>
+</head>
+<body style="background-color:#FFEBCD">
+<h1 align="center"> Case Details from PACER </h1>
+<hr>
+
+<!--Case Details-->
+<h3 align="center"> Case Details Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Case ID</th>
+		<th>Case Number</th>
+		<th>Parties invilved</th>
+		<th>Case Filed Date</th>
+		<th>Case Closed Date</th>
+	</tr>
+	{% if case_details_list %}
+	{% for case_details in case_details_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ case_details.case_id }}</td>
+		<td>{{ case_details.case_number }}</td>
+		<td>{{ case_details.parties_involved }}</td>
+		<td>{{ case_details.case_filed_date }}</td>
+		<td>{{ case_details.case_closed_date }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
+</body>
+</html>
