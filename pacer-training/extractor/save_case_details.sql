@@ -1,6 +1,6 @@
-CREATE DATABASE `django_learn` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
-USE `django_learn`;
+USE `pacer_case_details`;
 
 CREATE TABLE IF NOT EXISTS `search_criteria` (
 	`search_criteria_id` int NOT NULL AUTO_INCREMENT,
