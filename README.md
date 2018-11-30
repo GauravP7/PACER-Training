@@ -58,7 +58,7 @@
   
   ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-op-2.png)
   
-  ![output 3](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/Django-admin-1.png)
+  ![output 3](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-1.png)
 
-  ![output 4](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-2.png)
+  ![output 4](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-2.png)
  
