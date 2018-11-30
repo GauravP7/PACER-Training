@@ -17,6 +17,7 @@
   <li>Wrote the detailed steps (algorithm) to code the extraction and storing of the case details from the PACER training site.
 <li>Implemented the Django models and views to Displayed the stored data from the database.</li>
 </ul>
+<hr/>
 
 <h3>Steps Followed</h3>
     <code>
