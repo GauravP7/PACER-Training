@@ -2,28 +2,29 @@ import pacer_scrape as pacer_scraper
 import MySQLdb
 from mysql.connector import MySQLConnection, Error
 
-pacer_scraper_obj = pacer_scraper.PacerScrape()
+downloader_obj = pacer_scraper.Downloader()
+parser_obj = pacer_scraper.Parser()
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
-login_page_contents = pacer_scraper_obj.login_pacer()
+login_page_contents = downloader_obj.login_pacer()
 
 # [ Step 2 of 9 ] : Validate the Login.
-is_login_validate_success = pacer_scraper_obj.validate_login_success(login_page_contents)
+is_login_validate_success = downloader_obj.validate_login_success(login_page_contents)
 
 #Terminate the program if validation is unsuccessful
 if not is_login_validate_success:
-	pacer_scraper_obj.terminate_with_error_message()
+	downloader_obj.terminate_with_error_message()
 else:
 	print "Login successful"
 
 # [ Step 3 of 9 ] : Parse the contents and get cookie.
-pacer_scraper_obj.get_cookie_value(login_page_contents)
+downloader_obj.get_cookie_value(login_page_contents)
 
 # [ Step 4 of 9 ] : Query as per the input criteria.
-case_details_page_contents = pacer_scraper_obj.get_case_details_page_contents()
+case_details_page_contents = downloader_obj.get_case_details_page_contents()
 
 # [ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.
-page_path = pacer_scraper_obj.save_webpage_with_case_details(case_details_page_contents)
+page_path = parser_obj.save_webpage_with_case_details(case_details_page_contents)
 
 #settig up database connection
 database_connection = MySQLdb.connect(host= "",
@@ -45,33 +46,33 @@ print "page_path:\t", page_path
 
 # [ Step 7 of 9 ] : Print the Search Criteria.
 #Save the search criteria
-search_criteria = pacer_scraper.SearchCriteria()
+extractor = pacer_scraper.Extractor()
 try:
-	from_filed_date = search_criteria.from_filed_date if search_criteria.from_filed_date != '' else None
-	to_filed_date = search_criteria.to_filed_date if search_criteria.to_filed_date != '' else None
-	from_last_entry_date = search_criteria.from_last_entry_date if search_criteria.from_last_entry_date != '' else None
-	to_last_entry_date = search_criteria.to_last_entry_date if search_criteria.to_last_entry_date != '' else None
+	from_filed_date = extractor.from_filed_date if extractor.from_filed_date != '' else None
+	to_filed_date = extractor.to_filed_date if extractor.to_filed_date != '' else None
+	from_last_entry_date = extractor.from_last_entry_date if extractor.from_last_entry_date != '' else None
+	to_last_entry_date = extractor.to_last_entry_date if extractor.to_last_entry_date != '' else None
 	split_from_filed_date = from_filed_date.split('/')
 	from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
 	split_to_filed_date = to_filed_date.split('/')
 	to_filed_date = split_to_filed_date[2] + '/' + split_to_filed_date[0] + '/' +split_to_filed_date[1]
-	search_criteria_insert_query = """INSERT INTO search_criteria(case_number, case_status, from_field_date,
+	extractor_insert_query = """INSERT INTO extractor(case_number, case_status, from_field_date,
 		to_field_date, from_last_entry_date, to_last_entry_date, nature_of_suit, cause_of_action,
 		last_name, first_name, middle_name, type, exact_matches_only)
 		VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-	connection_cursor.execute(search_criteria_insert_query, (search_criteria.case_number, search_criteria.case_status,
+	connection_cursor.execute(extractor_insert_query, (extractor.case_number, extractor.case_status,
 						from_filed_date , to_filed_date,from_last_entry_date, to_last_entry_date,
-						search_criteria.nature_of_suit, search_criteria.cause_of_action,
-						search_criteria.last_name, search_criteria.first_name, search_criteria.middle_name,
-						search_criteria.type, search_criteria.exact_matches_only,))
-	print "Details are successfully added into search_criteria Table"
+						extractor.nature_of_suit, extractor.cause_of_action,
+						extractor.last_name, extractor.first_name, extractor.middle_name,
+						extractor.type, extractor.exact_matches_only,))
+	print "Details are successfully added into extractor Table"
 	database_connection.commit()
 except:
-		print "Failed to insert data into search_criteria Table"
+		print "Failed to insert data into extractor Table"
 		database_connection.rollback()
 
 # [ Step 8 of 9 ] : Print the case details.
-case_details_list = pacer_scraper_obj.get_case_details(case_details_page_contents)
+case_details_list = parser_obj.get_case_details(case_details_page_contents)
 
 #Extract indivisual tuples from the list and
 #Unpack all the tuples
@@ -127,5 +128,4 @@ for case_details in case_details_list:
 database_connection.close()
 
 # [ Step 9 of 9 ] : Logout from the website.
-pacer_scraper_obj.logout()
-
+downloader_obj.logout()

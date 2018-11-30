@@ -32,8 +32,8 @@ class AdditionalInfo(models.Model):
     class Meta:
         db_table = u'additional_info'
 
-class SearchCriteria(models.Model):
-    search_criteria_id = models.IntegerField(primary_key=True)
+class Extractor(models.Model):
+    extractor_id = models.IntegerField(primary_key=True)
     case_number = models.CharField(max_length=165, blank=True)
     case_status = models.CharField(max_length=165, blank=True)
     from_field_date = models.DateField(null=True, blank=True)
@@ -48,4 +48,4 @@ class SearchCriteria(models.Model):
     type = models.CharField(max_length=165, blank=True)
     exact_matches_only = models.IntegerField(null=True, blank=True)
     class Meta:
-        db_table = u'search_criteria'
+        db_table = u'extractor'

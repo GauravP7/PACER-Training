@@ -2,8 +2,8 @@ CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 USE `pacer_case_details`;
 
-CREATE TABLE IF NOT EXISTS `search_criteria` (
-	`search_criteria_id` int NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `extractor` (
+	`extractor_id` int NOT NULL AUTO_INCREMENT,
 `case_number`  VARCHAR(55),
 `case_status`  VARCHAR(55),
 `from_field_date`  DATE,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `search_criteria` (
 `middle_name`  VARCHAR(55),
 `type`  VARCHAR(55),
 `exact_matches_only`  TINYINT(1),
-	PRIMARY KEY (`search_criteria_id`)
+	PRIMARY KEY (`extractor_id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `page_content` (
@@ -48,15 +48,15 @@ CREATE TABLE IF NOT EXISTS  `additional_info` (
 
 /*INSERT statements*/
 /*
-INSERT INTO search_criteria(case_number, case_status, from_field_date, to_field_date, from_last_entry_date, to_last_entry_date,
-nature_of_suit, cause_of_action, last_name, first_name, middle_name, type, exact_matches_only) 
+INSERT INTO extractor(case_number, case_status, from_field_date, to_field_date, from_last_entry_date, to_last_entry_date,
+nature_of_suit, cause_of_action, last_name, first_name, middle_name, type, exact_matches_only)
 VALUES('', '', '2007-1-1', '2008-1-1', NULL, NULL, '', '', '', '', '', '', 0);
 
 INSERT INTO page_content(page_path) VALUES('/home/pacer_training');
 
-INSERT INTO case_details(page_content_id, case_number, parties_involved, case_filed_date, case_closed_date) 
+INSERT INTO case_details(page_content_id, case_number, parties_involved, case_filed_date, case_closed_date)
 VALUES(1, 'Case-123', 'ABC v. XYZ', '2007-10-01', '2009-01-01');
 
-INSERT INTO additional_info(case_id, additional_info_json) 
+INSERT INTO additional_info(case_id, additional_info_json)
 VALUES(1, "{'attorney':'https://case_attorney.com', 'mobile query':'https://case_mobile_query.com'}");
 */

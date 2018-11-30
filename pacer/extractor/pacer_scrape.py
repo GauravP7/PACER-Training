@@ -23,13 +23,11 @@ from bs4 import BeautifulSoup
 #
 # [ Step 9 of 9 ] : Logout from the website.
 
-class SearchCriteria():
+class Extractor():
 	"""
 		Class holds the search criteria as mentioned in the Schema.
 		Inherits:
 				None
-		Member functions:
-				1. print_search_criteria()
 	"""
 
 	def __init__(self):
@@ -51,7 +49,7 @@ class SearchCriteria():
 		self.type = ''
 		self.exact_matches_only = 0
 
-class PacerScrape():
+class Downloader():
 	"""
 		Class is used to scrape the case related data from the PACER training website.
 		Inherits:
@@ -170,21 +168,21 @@ class PacerScrape():
 
 		#Now we start hitting the content page
 		data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
-		search_criteria = SearchCriteria()
+		extractor_object = Extractor()
 
 		#The parameters to be encoded and sent as a search criteria
 		query_parameters = {
-			'UserType': search_criteria.user_type,
-			'all_case_ids': search_criteria.all_case_ids,
-			'case_num': search_criteria.case_number,
-			'Qry_filed_from': search_criteria.from_filed_date,
-			'Qry_filed_to': search_criteria.to_filed_date,
-			'lastentry_from': search_criteria.from_last_entry_date,
-			'lastentry_to': search_criteria.to_last_entry_date,
-			'last_name': search_criteria.last_name,
-			'first_name': search_criteria.first_name,
-			'middle_name': search_criteria.middle_name,
-			'person_type': search_criteria.type
+			'UserType': extractor_object.user_type,
+			'all_case_ids': extractor_object.all_case_ids,
+			'case_num': extractor_object.case_number,
+			'Qry_filed_from': extractor_object.from_filed_date,
+			'Qry_filed_to': extractor_object.to_filed_date,
+			'lastentry_from': extractor_object.from_last_entry_date,
+			'lastentry_to': extractor_object.to_last_entry_date,
+			'last_name': extractor_object.last_name,
+			'first_name': extractor_object.first_name,
+			'middle_name': extractor_object.middle_name,
+			'person_type': extractor_object.type
 		}
 
 		query_parameters_encoded = urllib.urlencode(query_parameters)
@@ -193,6 +191,33 @@ class PacerScrape():
 		case_details_page_contents = query_response.read()
 		return case_details_page_contents
 
+	def logout(self):
+		"""
+			Logout from the website
+			Arguments:
+					self, opener
+		"""
+
+		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
+		logout_response = self.opener.open(logout_page_url)
+		logout_page_contents = logout_response.read()
+
+	def terminate_with_error_message(self):
+		"""
+			Terminate the program with upon unsuccessful login
+			Arguments:
+					self
+		"""
+
+		print "The program is terminated since the login was unsuccessful."
+		print "Please check the credentials or your internet connection and try again"
+		exit(0)
+
+class Parser(Downloader):
+
+	def __inti__():
+		self.opener = super.opener
+		
 	def save_webpage_with_case_details(self, page_contents):
 		"""
 			Saves the HTML code of the Webpage containing the Case details
@@ -202,7 +227,7 @@ class PacerScrape():
 					page_path
 		"""
 
-		saved_webpage_file_path = '/home/mis/DjangoProject/pacer-training/extractor/Contents/'
+		saved_webpage_file_path = '/home/mis/DjangoProject/pacer/extractor/Contents/'
 		saved_webpage_file_name = 'case_details.html'
 		page_path = saved_webpage_file_path + saved_webpage_file_name
 		file_object = open(page_path, "w+")
@@ -276,25 +301,3 @@ class PacerScrape():
 			case_details_tuple = (case_number, parties_involed, case_filed_date, case_closed_date, additional_info_json)
 			case_details_list.append(case_details_tuple)
 		return case_details_list
-
-	def logout(self):
-		"""
-			Logout from the website
-			Arguments:
-					self, opener
-		"""
-
-		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
-		logout_response = self.opener.open(logout_page_url)
-		logout_page_contents = logout_response.read()
-
-	def terminate_with_error_message(self):
-		"""
-			Terminate the program with upon unsuccessful login
-			Arguments:
-					self
-		"""
-
-		print "The program is terminated since the login was unsuccessful."
-		print "Please check the credentials or your internet connection and try again"
-		exit(0)
