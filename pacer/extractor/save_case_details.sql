@@ -23,14 +23,14 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 CREATE TABLE IF NOT EXISTS  `page_content` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`page_path`  VARCHAR(110),
-    	PRIMARY KEY (`page_content_id`)
+    	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `page_source_path` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`case_details_id` int,
 	`page_value_json`  TEXT,
-    	FOREIGN KEY (`case_details_id`) REFERENCES case_details(`id`)
+    	FOREIGN KEY (`case_details_id`) REFERENCES case_details(`id`),
     	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS  `case_details` (
 	`parties_involved` VARCHAR(255),
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
-    	PRIMARY KEY (`case_id`),
+    	PRIMARY KEY (`id`),
     	FOREIGN KEY (`page_content_id`) REFERENCES page_content(`id`)
 ) ENGINE=INNODB;
 
@@ -49,6 +49,6 @@ CREATE TABLE IF NOT EXISTS  `additional_info` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`case_details_id` int,
 	`additional_info_json` TEXT,
-    	PRIMARY KEY (`info_id`),
+    	PRIMARY KEY (`id`),
     	FOREIGN KEY (`case_details_id`) REFERENCES case_details(`id`)
 ) ENGINE=INNODB;
