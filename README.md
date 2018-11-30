@@ -53,16 +53,20 @@
   <hr/>
   <h3>Output</h3>
 
+Displaying data stored in the database
 
   
  ![output 1](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-op-1.png)
   
   
-  ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-op-2.png)
+ ![output 2](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-op-2.png)
 
 Django Admin Site
 
-  ![output 3](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-1.png)
 
-  ![output 4](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-2.png)
+
+
+ ![output 3](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-1.png)
+
+ ![output 4](https://raw.githubusercontent.com/gaurav-uc/pacer-training/master/pacer/images/django-admin-output-2.png)
  
