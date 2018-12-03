@@ -29,7 +29,7 @@ extractor.save_search_criteria()
 # [ Step 7 of 8 ] : Save the case details.
 for file_name in file_names_list:
 	case_details_tuple = parser_obj.parse_case_details_page(file_name)
-	parser_obj.save_case_details(case_details_tuple, file_name)
+	parser_obj.save_case_details(case_details_tuple, file)
 
 # [ Step 8 of 8 ] : Logout from the website.
 downloader_obj.logout()
