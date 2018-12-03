@@ -4,6 +4,7 @@ import urllib
 import urllib2
 import re
 from bs4 import BeautifulSoup
+import json
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
 #
@@ -165,6 +166,7 @@ class Downloader():
 		for form_number in action_content:
 			if form_number.isdigit() and len(form_number) >= minimum_size_of_form_number:
 				required_form_number = form_number
+				break
 
 		#Now we start hitting the content page
 		data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
@@ -191,6 +193,28 @@ class Downloader():
 		case_details_page_contents = query_response.read()
 		return case_details_page_contents
 
+	def save_all_case_details_page(self, case_details_page_contents):
+		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
+		case_links = case_details_soup.find_all('a', class_='')[:10]
+		case_links_list = []
+		for case_link in case_links:
+			if case_link:
+				case_links_list.append(case_link['href'])
+			else:
+				pass
+		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
+
+		#open each link and save each page
+		case_count = 1
+		for case_link in case_links_list:
+			case_details_page_response = self.opener.open( case_details_base_link + case_link )
+			case_name = 'case_' + str(case_count)
+			case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + case_name + '.html', 'w+')
+			case_file_object.write(case_details_page_response.read())
+			case_count += 1
+			case_file_object.close()
+		return case_count
+
 	def logout(self):
 		"""
 			Logout from the website
@@ -213,91 +237,31 @@ class Downloader():
 		print "Please check the credentials or your internet connection and try again"
 		exit(0)
 
-class Parser(Downloader):
+class Parser():
 
-	def __inti__():
-		self.opener = super.opener
-		
-	def save_webpage_with_case_details(self, page_contents):
-		"""
-			Saves the HTML code of the Webpage containing the Case details
-			Arguments:
-					self, page_contents
-			Returns:
-					page_path
-		"""
+	def parse_case_details_page(self, file_name):
 
-		saved_webpage_file_path = '/home/mis/DjangoProject/pacer/extractor/Contents/'
-		saved_webpage_file_name = 'case_details.html'
-		page_path = saved_webpage_file_path + saved_webpage_file_name
-		file_object = open(page_path, "w+")
-		file_object.write(page_contents)
-		file_object.close()
-		return page_path
-
-	def get_case_details(self, case_details_page_contents):
-		"""
-			Saves the case details and Additional info as mentioned in the Schema
-			Arguments:
-					self, opener, case_details_page_contents
-		"""
-
-		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
-		table_contents = case_details_soup.find_all('tr')
-		table_contents_length = len(table_contents) - (len(table_contents) - 10)
-		case_details_list = []
+		#Parse for case details
 		additional_info_json = {}
-		additional_info_links_list = []
-		for case_details_index in range(table_contents_length):
-			base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
-			all_td_tags = table_contents[case_details_index].find_all('td')
+		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name + '.html', 'r')
+		contents = BeautifulSoup(case_file, 'html.parser')
+		center_tag =  contents.find_all('center')
+		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
+		case_number = case_details[0]
+		parties_involved = case_details[1]
+		case_filed_date = case_details[2]
+		if len(case_details) > 3:
+			case_closed_date = case_details[3]
+		else:
+			case_closed_date = ''
+		additional_info_links = contents.find_all('a', class_='')
+		for additional_info in additional_info_links:
+			additional_info_name = additional_info.text
+			additional_info_link = additional_info_base_url + additional_info['href']
+			additional_info_json[additional_info_name] = additional_info_link
+		additional_info_json = json.dumps(additional_info_json)
 
-			#There results of memory profiling for the if-else blocks v. try-except
-			#are as follows:
-			############################
-			#Time Taken (in seconds):
-			#	Without error :
-			#		if-else: 0.713079
-			#		try-except: 0.674906
-			#	With error:
-			#		if-else: 0.569615
-			#		try-except: 0.542591
-			############################
-			#Memory Consumed (in Bytes) per line:
-			#	if-else: 56.867
-			#	try-except: 59.004
-			if len(all_td_tags) > 2:
-
-				#Handling the extra 'tr' and 'td' tags that are unnecessay
-				if all_td_tags[0].a:
-					additional_info_link = all_td_tags[0].a['href']
-					case_number = all_td_tags[0].a.text
-				else:
-					continue
-				parties_involed = all_td_tags[1].text
-				required_dates = all_td_tags[2].text
-				case_filed_date = required_dates.split()[1]
-				#Handling the cases that are not closed
-				if len(required_dates.split()) > 3:
-					case_closed_date = required_dates.split()[3]
-				else:
-					case_closed_date = ''
-			else:
-				continue
-			additional_info_page_response = self.opener.open(base_url +additional_info_link )
-			additional_info_page_contents = additional_info_page_response.read()
-			additional_info_page_response.close()
-
-			#Generate additional info
-			case_contents_soup = BeautifulSoup(additional_info_page_contents, 'html.parser')
-			additional_info_links_list = case_contents_soup.select('td a')
-			for additional_info in additional_info_links_list:
-				additional_info_name = additional_info.text
-				additional_info_link = additional_info['href']
-				additional_info_json[additional_info_name] = additional_info_link
-
-			#pack all the required case variables into a tuple
-			#And append them to a list, which is then returned and unpacked
-			case_details_tuple = (case_number, parties_involed, case_filed_date, case_closed_date, additional_info_json)
-			case_details_list.append(case_details_tuple)
-		return case_details_list
+		#Perform tuple packing
+		required_case_details = (case_number, parties_involved, case_filed_date, case_closed_date, additional_info_json)
+		return required_case_details
