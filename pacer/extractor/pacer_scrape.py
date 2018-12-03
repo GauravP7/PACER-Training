@@ -1,28 +1,27 @@
 #!/py-virtualenv/ENV/bin/python
-import sys
+import os
 import urllib
 import urllib2
 import re
-from bs4 import BeautifulSoup
+import MySQLdb
 import json
+from bs4 import BeautifulSoup
 
-# [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
+# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
 #
-# [ Step 2 of 9 ] : Validate the Login.
+# [ Step 2 of 8 ] : Validate the Login.
 #
-# [ Step 3 of 9 ] : Parse the contents and get cookie.
+# [ Step 3 of 8 ] : Parse the contents and get cookie.
 #
-# [ Step 4 of 9 ] : Query as per the input criteria.
+# [ Step 4 of 8 ] : Query as per the input criteria.
 #
-# [ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.
+# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 #
-# [ Step 6 of 9 ] : Print the page path.
+# [ Step 6 of 8 ] : Save the Search Criteria.
 #
-# [ Step 7 of 9 ] : Print the Search Criteria.
+# [ Step 7 of 8 ] : Save the case details.
 #
-# [ Step 8 of 9 ] : Print the case details.
-#
-# [ Step 9 of 9 ] : Logout from the website.
+# [ Step 8 of 8 ] : Logout from the website.
 
 class Extractor():
 	"""
@@ -50,19 +49,52 @@ class Extractor():
 		self.type = ''
 		self.exact_matches_only = 0
 
+		#settig up database connection
+		self.database_connection = MySQLdb.connect(host= "",
+						      user="root",
+						      password="Code@mispl",
+						      db="pacer_case_details")
+		self.connection_cursor = self.database_connection.cursor()
+
+	def save_search_criteria(self):
+		"""
+			Used to save the different search criteria used for querying.
+			Arguments:
+					self
+		"""
+
+		from_filed_date = self.from_filed_date if self.from_filed_date != '' else None
+		to_filed_date = self.to_filed_date if self.to_filed_date != '' else None
+		from_last_entry_date = self.from_last_entry_date if self.from_last_entry_date != '' else None
+		to_last_entry_date = self.to_last_entry_date if self.to_last_entry_date != '' else None
+		split_from_filed_date = self.from_filed_date.split('/')
+		from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
+		split_to_filed_date = self.to_filed_date.split('/')
+		to_filed_date = split_to_filed_date[2] + '/' + split_to_filed_date[0] + '/' +split_to_filed_date[1]
+		extractor_insert_query = """INSERT INTO extractor(case_number, case_status, from_field_date,
+			to_field_date, from_last_entry_date, to_last_entry_date, nature_of_suit, cause_of_action,
+			last_name, first_name, middle_name, type, exact_matches_only)
+			VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+		self.connection_cursor.execute(extractor_insert_query, (self.case_number, self.case_status,
+							from_filed_date , to_filed_date, from_last_entry_date, to_last_entry_date,
+							self.nature_of_suit, self.cause_of_action,
+							self.last_name, self.first_name, self.middle_name,
+							self.type, self.exact_matches_only,))
+		self.database_connection.commit()
+
 class Downloader():
 	"""
-		Class is used to scrape the case related data from the PACER training website.
+		Class is used to download the case related pages from the PACER training website.
 		Inherits:
 				None
 		Member functions:
 				1. login_pacer(self)
-				2. get_cookie_value(self, login_page_contents)
+				2. set_cookie_value(self, login_page_contents)
 				3. validate_login_success(self, login_page_contents)
 				4. get_case_details_page_contents(self)
-				5. save_webpage_with_case_details(self, page_contents)
+				5. save_all_case_details_page(self, case_details_page_contents)
 				6. parse_case_details(self, case_details_page_contents)
-				7. logout(self)
+				7. logout(self)self.
 				8. terminate_with_error_message(self)
 	"""
 
@@ -74,7 +106,7 @@ class Downloader():
 			 2. Initializes login credentials
 			 3. Initializes cookie
 		"""
-
+		#Initialize the opener
 		self.opener = urllib2.build_opener()
 		urllib2.install_opener(self.opener)
 
@@ -84,6 +116,13 @@ class Downloader():
 		#Initializes the login credentials
 		self.username = 'tr1234'
 		self.password = 'Pass!234'
+
+		#settig up database connection
+		self.database_connection = MySQLdb.connect(host= "",
+						      user="root",
+						      password="Code@mispl",
+						      db="pacer_case_details")
+		self.connection_cursor = self.database_connection.cursor()
 
 	def login_pacer(self):
 		"""
@@ -102,7 +141,7 @@ class Downloader():
 		login_page_contents = login_page_response.read()
 		return login_page_contents
 
-	def get_cookie_value(self, login_page_contents):
+	def set_cookie_value(self, login_page_contents):
 		"""
 			Used to get the cookie value.
 			Arguments:
@@ -137,9 +176,10 @@ class Downloader():
 
 		for h3_tag in login_page_h3_tags:
 			if "U.S. DISTRICT COURT" in str(h3_tag):
+				print "Login successful"
 				return True
 
-		return False
+		return self.terminate_with_error_message()
 
 	def get_case_details_page_contents(self):
 		"""
@@ -194,32 +234,60 @@ class Downloader():
 		return case_details_page_contents
 
 	def save_all_case_details_page(self, case_details_page_contents):
+		"""
+			Saves the pages related to case details along with the pages
+			containing additional information
+			 Arguments:
+			 		self, case_details_page_contents
+			Returns:
+					file_names_list
+		"""
+
+		#Save the case details page having all case information
+		page_path = os.getcwd() + '/Contents'
+		file_name = 'case_details.html'
+		case_details_file_object = open(page_path + '/' + file_name, 'w')
+		case_details_file_object.write(case_details_page_contents)
+		case_details_file_object.close()
+
+		#Insert the value of variable page_path into the database
+
+		path_insert_query = """INSERT INTO page_content(page_path) VALUES(%s)"""
+		self.connection_cursor.execute(path_insert_query, (page_path,))
+		self.database_connection.commit()
+
+		#Collect all the links
 		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
 		case_links = case_details_soup.find_all('a', class_='')[:10]
 		case_links_list = []
+		case_number_list = []
+		file_names_list = []
 		for case_link in case_links:
 			if case_link:
 				case_links_list.append(case_link['href'])
+				case_number_list.append(case_link.text)
 			else:
 				pass
 		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 
 		#open each link and save each page
-		case_count = 1
+		case_count = 0
 		for case_link in case_links_list:
 			case_details_page_response = self.opener.open( case_details_base_link + case_link )
-			case_name = 'case_' + str(case_count)
-			case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + case_name + '.html', 'w+')
+			case_number = case_number_list[case_count].replace(':', '').replace('-', '_')
+			file_name = case_number + '.html'
+			file_names_list.append(file_name)
+			case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
 			case_file_object.write(case_details_page_response.read())
 			case_count += 1
 			case_file_object.close()
-		return case_count
+		return file_names_list
 
 	def logout(self):
 		"""
 			Logout from the website
 			Arguments:
-					self, opener
+					self, openerdatabase_connection
 		"""
 
 		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
@@ -238,13 +306,36 @@ class Downloader():
 		exit(0)
 
 class Parser():
+	"""
+		Class is used to scrape the case related data from the PACER training website.
+		Inherits:
+				None
+		Member functions:
+				1. parse_case_details_page(self, file_name)
+				2. save_case_details(self)
+	"""
+
+	def __init__(self):
+
+		#settig up database connection
+		self.database_connection = MySQLdb.connect(host= "",
+						      user="root",
+						      password="Code@mispl",
+						      db="pacer_case_details")
+		self.connection_cursor = self.database_connection.cursor()
 
 	def parse_case_details_page(self, file_name):
-
+		"""
+			Parse the saved case pages
+			Arguments:
+					self, file_name
+			Returns:
+					required_case_details
+		"""
 		#Parse for case details
 		additional_info_json = {}
 		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
-		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name + '.html', 'r')
+		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name, 'r')
 		contents = BeautifulSoup(case_file, 'html.parser')
 		center_tag =  contents.find_all('center')
 		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
@@ -255,6 +346,8 @@ class Parser():
 			case_closed_date = case_details[3]
 		else:
 			case_closed_date = ''
+
+		#Parse the additional info
 		additional_info_links = contents.find_all('a', class_='')
 		for additional_info in additional_info_links:
 			additional_info_name = additional_info.text
@@ -262,6 +355,67 @@ class Parser():
 			additional_info_json[additional_info_name] = additional_info_link
 		additional_info_json = json.dumps(additional_info_json)
 
+		#Parse the pacer_case_id
+		pacer_case_id = additional_info_link[-5:]
+
 		#Perform tuple packing
-		required_case_details = (case_number, parties_involved, case_filed_date, case_closed_date, additional_info_json)
+		required_case_details = (case_number, parties_involved, case_filed_date, case_closed_date, pacer_case_id, additional_info_json)
 		return required_case_details
+
+	def save_case_details(self, case_details_tuple, file_name):
+		"""
+			Save all the case details
+			Arguments:
+					self, case_details_tuple
+		"""
+
+		case_number = case_details_tuple[0]
+		parties_involed = case_details_tuple[1]
+		case_filed_date = case_details_tuple[2].strip('\n')
+		case_closed_date = case_details_tuple[3].strip('\n')
+		pacer_case_id = case_details_tuple[4]
+		additional_info_json = case_details_tuple[5]
+
+		#Save details into the database
+		case_filed_date = case_filed_date if case_filed_date != '' else None
+		case_closed_date = case_closed_date if case_closed_date != '' else None
+		if case_filed_date is not None:
+			split_case_filed_date = case_filed_date.split('/')
+			case_filed_date = split_case_filed_date[2] + '/' +  split_case_filed_date[0] + '/' + split_case_filed_date[1]
+		if case_closed_date is not None:
+			split_case_closed_date = case_closed_date.split('/')
+			case_closed_date = split_case_closed_date[2] + '/' +  split_case_closed_date[0] + '/' + split_case_closed_date[1]
+			
+		#Save case related info into the table
+		self.connection_cursor.execute("SELECT id from page_content ORDER BY id DESC LIMIT 1")
+		page_content_id = self.connection_cursor.fetchall()
+		case_details_insert_query = """INSERT INTO case_details(page_content_id, pacer_case_id, case_number, parties_involved,
+									case_filed_date, case_closed_date)
+									VALUES(%s, %s, %s, %s, %s, %s)"""
+		self.connection_cursor.execute(case_details_insert_query,
+								(page_content_id, pacer_case_id, case_number, parties_involed,
+								case_filed_date, case_closed_date,))
+		self.database_connection.commit()
+
+
+		#Save addional info into the table
+		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
+		case_details_id =  self.connection_cursor.fetchall()
+		additional_info_insert_query = """INSERT INTO additional_info(case_details_id, additional_info_json)
+									VALUES(%s, %s)"""
+		self.connection_cursor.execute(additional_info_insert_query, (case_details_id, additional_info_json,))
+		self.database_connection.commit()
+
+		#Save into the page_source_path table
+		page_value_json = {}
+		page_value_json['CASE'] = os.getcwd() + '/contents/case/' + file_name
+		page_value_json = json.dumps(page_value_json)
+		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
+		case_details_id =  self.connection_cursor.fetchall()
+		page_source_path_insert_query = """INSERT INTO page_source_path(case_details_id, page_value_json)
+									VALUES(%s, %s)"""
+		self.connection_cursor.execute(page_source_path_insert_query, (case_details_id, page_value_json,))
+		self.database_connection.commit()
+
+	def __del__(self):
+		self.database_connection.close()
