@@ -5,6 +5,7 @@ import urllib2
 import re
 import MySQLdb
 import json
+import datetime
 from bs4 import BeautifulSoup
 
 # [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
@@ -32,29 +33,53 @@ class Extractor():
 
 	def __init__(self):
 
-		#Initialize the search criteria
-		self.user_type = ''
-		self.all_case_ids = 0
-		self.case_number = ''
-		self.case_status = ''
-		self.from_filed_date = '1/1/2007'
-		self.to_filed_date = '1/1/2008'
-		self.from_last_entry_date = ''
-		self.to_last_entry_date = ''
-		self.nature_of_suit = ''
-		self.cause_of_action = ''
-		self.last_name = ''
-		self.first_name = ''
-		self.middle_name = ''
-		self.type = ''
-		self.exact_matches_only = 0
-
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
 						      user="root",
 						      password="Code@mispl",
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
+		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
+		extractor_search_criteria = self.connection_cursor.fetchall()
+		(	id,
+			case_number,
+			case_status,
+			from_filed_date,
+			to_filed_date,
+			from_last_entry_date,
+			to_last_entry_date,
+			nature_of_suit,
+			cause_of_action,
+			last_name,
+			first_name,
+			middle_name,
+			type,
+			exact_matches_only) = extractor_search_criteria[0]
+
+		if from_filed_date is not None:
+			split_from_filed_date = str(from_filed_date).split('-')
+			from_filed_date = split_from_filed_date[1] + '/' +  split_from_filed_date[2] + '/' + split_from_filed_date[0]
+
+		if to_filed_date is not None:
+			split_to_filed_date = str(to_filed_date).split('-')
+			to_filed_date = split_to_filed_date[1] + '/' +  split_to_filed_date[2] + '/' + split_to_filed_date[0]
+
+		#Initialize the search criteria
+		self.user_type = ''
+		self.all_case_ids = 0
+		self.case_number = case_number if case_number != '' else ''
+		self.case_status = case_status
+		self.from_filed_date = from_filed_date if from_filed_date != None else ''
+		self.to_filed_date = to_filed_date if to_filed_date != None else ''
+		self.from_last_entry_date = from_last_entry_date if from_last_entry_date != None else ''
+		self.to_last_entry_date = to_last_entry_date if from_last_entry_date != None else ''
+		self.nature_of_suit = nature_of_suit if nature_of_suit != '' else ''
+		self.cause_of_action = cause_of_action if cause_of_action != '' else ''
+		self.last_name = last_name if last_name != '' else ''
+		self.first_name = first_name if first_name != '' else ''
+		self.middle_name = middle_name if first_name != '' else ''
+		self.type = type
+		self.exact_matches_only = 0
 
 	def save_search_criteria(self):
 		"""
@@ -71,9 +96,9 @@ class Extractor():
 		#Split the date to save in dd/mm/yyyy format
 		#Because MySQL accepts only dd/mm/yyyy format
 		#It fails to save the date if it is in any other format
-		split_from_filed_date = self.from_filed_date.split('/')
+		split_from_filed_date = self.from_filed_date.split('-')
 		from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
-		split_to_filed_date = self.to_filed_date.split('/')
+		split_to_filed_date = self.to_filed_date.split('-')
 		to_filed_date = split_to_filed_date[2] + '/' + split_to_filed_date[0] + '/' +split_to_filed_date[1]
 
 		#Insert the case details into the database
@@ -264,7 +289,7 @@ class Downloader():
 		file_names_list = []
 		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 		case_count = 0
-		page_path = os.getcwd() + '/Contents'
+		page_path = '/home/mis/DjangoProject/pacer/extractor/Contents'
 		file_name = 'case_details.html'
 
 		#Save the case details page having all case information
@@ -279,7 +304,7 @@ class Downloader():
 
 		#Collect all the links
 		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
-		case_links = case_details_soup.find_all('a', class_='')[:10]
+		case_links = case_details_soup.find_all('a', class_='')
 		for case_link in case_links:
 			if case_link:
 				case_links_list.append(case_link['href'])
@@ -362,8 +387,10 @@ class Parser():
 			Returns:
 					required_case_details
 		"""
+
 		additional_info_json = {}
 		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		parties_involved = ''
 
 		#Parse for case details
 		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name, 'r')
@@ -371,12 +398,25 @@ class Parser():
 		center_tag =  contents.find_all('center')
 		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
 		case_number = case_details[0]
-		parties_involved = case_details[1]
+
+		#Check for special cases where the text 'All Defendants are missing'
+		if len(case_number) > 22: #The usual length of a case number
+			parties_involved = case_number[18:]
+			case_number = case_number[0:17]
+		else:
+			parties_involved = case_details[1]
+
 		case_filed_date = case_details[2]
+
+		#Validate for cases without close date
 		if len(case_details) > 3:
 			case_closed_date = case_details[3]
 		else:
 			case_closed_date = ''
+
+		#Add the created date and last updated date
+		created_date = datetime.date.today().strftime('%Y/%m/%d')
+		last_updated_date = created_date
 
 		#Parse the additional info
 		additional_info_links = contents.find_all('a', class_='')
@@ -392,33 +432,27 @@ class Parser():
 		#Perform tuple packing
 		required_case_details = (case_number, parties_involved,
 								case_filed_date, case_closed_date,
-								pacer_case_id, additional_info_json)
+								pacer_case_id, additional_info_json,
+								created_date, last_updated_date)
 		return required_case_details
 
 	def save_case_details(self, case_details_tuple, file_name):
-		"""		"""
-			Destructor
-			Tasks:
-				1. Close the database connection
 		"""
-			Save all the case details
+			Save teh parsed case details
 			Arguments:
-					self, case_details_tuple
+					self, case_details_tuple, file_name
 		"""
 
 		(case_number, parties_involved,
 		case_filed_date, case_closed_date,
-		pacer_case_id, additional_info_json) = case_details_tuple
+		pacer_case_id, additional_info_json,
+		created_date, last_updated_date) = case_details_tuple
 		page_value_json = {}
 
 		#Save details into the database
 		case_filed_date = case_filed_date.strip('\n')
 		case_closed_date = case_filed_date.strip('\n')
-		case_filed_date = case_filed_date if c		"""
-			Destructor
-			Tasks:
-				1. Close the database connection
-		"""ase_filed_date != '' else None
+		case_filed_date = case_filed_date if case_filed_date != '' else None
 		case_closed_date = case_closed_date if case_closed_date != '' else None
 		if case_filed_date is not None:
 			split_case_filed_date = case_filed_date.split('/')
@@ -427,38 +461,43 @@ class Parser():
 			split_case_closed_date = case_closed_date.split('/')
 			case_closed_date = split_case_closed_date[2] + '/' +  split_case_closed_date[0] + '/' + split_case_closed_date[1]
 
-		#Save case related info into the table
-		self.connection_cursor.execute("SELECT id from page_content ORDER BY id DESC LIMIT 1")
-		page_content_id = self.connection_cursor.fetchall()
-		case_details_insert_query = """INSERT INTO case_details(page_content_id, pacer_case_id, case_number, parties_involved,
-									case_filed		"""
-			Destructor
-			Tasks:
-				1. Close the database connection
-		"""_date, case_closed_date)
-									VALUES(%s, %s, %s, %s, %s, %s)"""
-		self.connection_cursor.execute(case_details_insert_query,
-								(page_content_id, pacer_case_id, case_number, parties_involved,
-								case_filed_date, case_closed_date,))
-		self.database_connection.commit()
+		#Get Last updated date
+		self.connection_cursor.execute("""SELECT pacer_case_id from case_details
+										  WHERE case_number = %s""",
+										  (case_number,))
+		is_exists_pacer_case_id = self.connection_cursor.fetchall()
 
-		#Save addional info into the table
-		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
-		case_details_id =  self.connection_cursor.fetchall()
-		additional_info_insert_query = """INSERT INTO additional_info(case_details_id, additional_info_json)
-									VALUES(%s, %s)"""
-		self.connection_cursor.execute(additional_info_insert_query, (case_details_id, additional_info_json,))
-		self.database_connection.commit()
+		if not is_exists_pacer_case_id:
+			#Save case related info into the table
+			self.connection_cursor.execute("SELECT id from page_content ORDER BY id DESC LIMIT 1")
+			page_content_id = self.connection_cursor.fetchall()
+			case_details_insert_query = """INSERT INTO case_details(page_content_id, pacer_case_id, case_number,
+										   parties_involved, case_filed_date, case_closed_date)
+										   VALUES(%s, %s, %s, %s, %s, %s)"""
+			self.connection_cursor.execute(case_details_insert_query,
+									(page_content_id, pacer_case_id, case_number, parties_involved,
+									case_filed_date, case_closed_date,))
+			self.database_connection.commit()
 
-		#Save into the page_source_path table
-		page_value_json['CASE'] = os.getcwd() + '/contents/case/' + file_name
-		page_value_json = json.dumps(page_value_json)
-		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
-		case_details_id =  self.connection_cursor.fetchall()
-		page_source_path_insert_query = """INSERT INTO page_source_path(case_details_id, page_value_json)
-									VALUES(%s, %s)"""
-		self.connection_cursor.execute(page_source_path_insert_query, (case_details_id, page_value_json,))
-		self.database_connection.commit()parse_case_details
+			#Save addional info into the table
+			self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
+			case_details_id =  self.connection_cursor.fetchall()
+			additional_info_insert_query = """INSERT INTO additional_info(case_details_id, additional_info_json)
+										VALUES(%s, %s)"""
+			self.connection_cursor.execute(additional_info_insert_query, (case_details_id, additional_info_json,))
+			self.database_connection.commit()
+
+			#Save into the page_source_path table
+			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor//contents/case/' + file_name
+			page_value_json = json.dumps(page_value_json)
+			self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
+			case_details_id =  self.connection_cursor.fetchall()
+			page_source_path_insert_query = """INSERT INTO page_source_path(case_details_id, page_value_json)
+										VALUES(%s, %s)"""
+			self.connection_cursor.execute(page_source_path_insert_query, (case_details_id, page_value_json,))
+			self.database_connection.commit()
+		else:
+			print "This entry already exists"
 
 	def __del__(self):
 		"""

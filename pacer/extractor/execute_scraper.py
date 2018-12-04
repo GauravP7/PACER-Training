@@ -19,8 +19,8 @@ case_details_page_contents = downloader_obj.get_case_details_page_contents()
 file_names_list = downloader_obj.save_all_case_details_page(case_details_page_contents)
 
 # [ Step 6 of 8 ] : Save the Search Criteria.
-extractor = pacer_scraper.Extractor()
-extractor.save_search_criteria()
+#extractor = pacer_scraper.Extractor()
+#extractor.save_search_criteria()
 
 # [ Step 7 of 8 ] : Save the case details.
 for file_name in file_names_list:
