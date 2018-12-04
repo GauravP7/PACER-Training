@@ -4,19 +4,19 @@ USE `django_learn`;
 
 CREATE TABLE IF NOT EXISTS `search_criteria` (
 	`search_criteria_id` int NOT NULL AUTO_INCREMENT,
-`case_number`  VARCHAR(55),
-`case_status`  VARCHAR(55),
-`from_field_date`  DATE,
-`to_field_date`  DATE,
-`from_last_entry_date`  DATE,
-`to_last_entry_date`  DATE,
-`nature_of_suit`   VARCHAR(55),
-`cause_of_action`   VARCHAR(55),
-`last_name`  VARCHAR(55),
-`first_name`  VARCHAR(55),
-`middle_name`  VARCHAR(55),
-`type`  VARCHAR(55),
-`exact_matches_only`  TINYINT(1),
+	`case_number`  VARCHAR(55),
+	`case_status`  VARCHAR(55),
+	`from_field_date`  DATE,
+	`to_field_date`  DATE,
+	`from_last_entry_date`  DATE,
+	`to_last_entry_date`  DATE,
+	`nature_of_suit`   VARCHAR(55),
+	`cause_of_action`   VARCHAR(55),
+	`last_name`  VARCHAR(55),
+	`first_name`  VARCHAR(55),
+	`middle_name`  VARCHAR(55),
+	`type`  VARCHAR(55),
+	`exact_matches_only`  TINYINT(1),
 	PRIMARY KEY (`search_criteria_id`)
 ) ENGINE=INNODB;
 
@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS  `page_content` (
 
 CREATE TABLE IF NOT EXISTS  `case_details` (
 	`case_id` int NOT NULL AUTO_INCREMENT,
-  `page_content_id` int NOT NULL,
-  `case_number` VARCHAR(55),
+	`page_content_id` int NOT NULL,
+	`case_number` VARCHAR(55),
 	`parties_involved` VARCHAR(255),
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,

@@ -1,7 +1,4 @@
 import pacer_scrape as pacer_scraper
-import os
-import json
-from mysql.connector import MySQLConnection, Error
 
 downloader_obj = pacer_scraper.Downloader()
 parser_obj = pacer_scraper.Parser()
@@ -21,15 +18,14 @@ case_details_page_contents = downloader_obj.get_case_details_page_contents()
 # [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 file_names_list = downloader_obj.save_all_case_details_page(case_details_page_contents)
 
-# [ Step 6 of 8 ] : Print the Search Criteria.
-#Save the search criteria
+# [ Step 6 of 8 ] : Save the Search Criteria.
 extractor = pacer_scraper.Extractor()
 extractor.save_search_criteria()
 
 # [ Step 7 of 8 ] : Save the case details.
 for file_name in file_names_list:
 	case_details_tuple = parser_obj.parse_case_details_page(file_name)
-	parser_obj.save_case_details(case_details_tuple, file)
+	parser_obj.save_case_details(case_details_tuple, file_name)
 
 # [ Step 8 of 8 ] : Logout from the website.
 downloader_obj.logout()

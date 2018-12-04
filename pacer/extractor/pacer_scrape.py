@@ -67,10 +67,16 @@ class Extractor():
 		to_filed_date = self.to_filed_date if self.to_filed_date != '' else None
 		from_last_entry_date = self.from_last_entry_date if self.from_last_entry_date != '' else None
 		to_last_entry_date = self.to_last_entry_date if self.to_last_entry_date != '' else None
+
+		#Split the date to save in dd/mm/yyyy format
+		#Because MySQL accepts only dd/mm/yyyy format
+		#It fails to save the date if it is in any other format
 		split_from_filed_date = self.from_filed_date.split('/')
 		from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
 		split_to_filed_date = self.to_filed_date.split('/')
 		to_filed_date = split_to_filed_date[2] + '/' + split_to_filed_date[0] + '/' +split_to_filed_date[1]
+
+		#Insert the case details into the database
 		extractor_insert_query = """INSERT INTO extractor(case_number, case_status, from_field_date,
 			to_field_date, from_last_entry_date, to_last_entry_date, nature_of_suit, cause_of_action,
 			last_name, first_name, middle_name, type, exact_matches_only)
@@ -81,6 +87,14 @@ class Extractor():
 							self.last_name, self.first_name, self.middle_name,
 							self.type, self.exact_matches_only,))
 		self.database_connection.commit()
+
+	def __del__(self):
+		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
+		"""
+		self.database_connection.close()
 
 class Downloader():
 	"""
@@ -93,9 +107,8 @@ class Downloader():
 				3. validate_login_success(self, login_page_contents)
 				4. get_case_details_page_contents(self)
 				5. save_all_case_details_page(self, case_details_page_contents)
-				6. parse_case_details(self, case_details_page_contents)
-				7. logout(self)self.
-				8. terminate_with_error_message(self)
+				6. logout(self)self.
+				7. terminate_with_error_message(self)
 	"""
 
 	def __init__(self):
@@ -105,7 +118,9 @@ class Downloader():
 			 1. sets up the opener
 			 2. Initializes login credentials
 			 3. Initializes cookie
+			 4. Setting up the database connection and cursor
 		"""
+
 		#Initialize the opener
 		self.opener = urllib2.build_opener()
 		urllib2.install_opener(self.opener)
@@ -147,6 +162,7 @@ class Downloader():
 			Arguments:
 					self, login_page_contents
 		"""
+
 		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 
 		#The 'html.parser' is unnecessay since it is Default to BeautifulSoup.
@@ -243,15 +259,20 @@ class Downloader():
 					file_names_list
 		"""
 
-		#Save the case details page having all case information
+		case_links_list = []
+		case_number_list = []
+		file_names_list = []
+		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
+		case_count = 0
 		page_path = os.getcwd() + '/Contents'
 		file_name = 'case_details.html'
+
+		#Save the case details page having all case information
 		case_details_file_object = open(page_path + '/' + file_name, 'w')
 		case_details_file_object.write(case_details_page_contents)
 		case_details_file_object.close()
 
 		#Insert the value of variable page_path into the database
-
 		path_insert_query = """INSERT INTO page_content(page_path) VALUES(%s)"""
 		self.connection_cursor.execute(path_insert_query, (page_path,))
 		self.database_connection.commit()
@@ -259,19 +280,14 @@ class Downloader():
 		#Collect all the links
 		case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
 		case_links = case_details_soup.find_all('a', class_='')[:10]
-		case_links_list = []
-		case_number_list = []
-		file_names_list = []
 		for case_link in case_links:
 			if case_link:
 				case_links_list.append(case_link['href'])
 				case_number_list.append(case_link.text)
 			else:
 				pass
-		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 
 		#open each link and save each page
-		case_count = 0
 		for case_link in case_links_list:
 			case_details_page_response = self.opener.open( case_details_base_link + case_link )
 			case_number = case_number_list[case_count].replace(':', '').replace('-', '_')
@@ -293,6 +309,7 @@ class Downloader():
 		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
 		logout_response = self.opener.open(logout_page_url)
 		logout_page_contents = logout_response.read()
+		print "Logout Successful"
 
 	def terminate_with_error_message(self):
 		"""
@@ -305,6 +322,14 @@ class Downloader():
 		print "Please check the credentials or your internet connection and try again"
 		exit(0)
 
+	def __del__(self):
+		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
+		"""
+		self.database_connection.close()
+
 class Parser():
 	"""
 		Class is used to scrape the case related data from the PACER training website.
@@ -316,6 +341,11 @@ class Parser():
 	"""
 
 	def __init__(self):
+		"""
+			Default constructor
+			Tasks:
+			 1. Setting up the database connection and cursor
+		"""
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -332,9 +362,10 @@ class Parser():
 			Returns:
 					required_case_details
 		"""
-		#Parse for case details
 		additional_info_json = {}
 		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+
+		#Parse for case details
 		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name, 'r')
 		contents = BeautifulSoup(case_file, 'html.parser')
 		center_tag =  contents.find_all('center')
@@ -359,25 +390,35 @@ class Parser():
 		pacer_case_id = additional_info_link[-5:]
 
 		#Perform tuple packing
-		required_case_details = (case_number, parties_involved, case_filed_date, case_closed_date, pacer_case_id, additional_info_json)
+		required_case_details = (case_number, parties_involved,
+								case_filed_date, case_closed_date,
+								pacer_case_id, additional_info_json)
 		return required_case_details
 
 	def save_case_details(self, case_details_tuple, file_name):
+		"""		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
 		"""
 			Save all the case details
 			Arguments:
 					self, case_details_tuple
 		"""
 
-		case_number = case_details_tuple[0]
-		parties_involed = case_details_tuple[1]
-		case_filed_date = case_details_tuple[2].strip('\n')
-		case_closed_date = case_details_tuple[3].strip('\n')
-		pacer_case_id = case_details_tuple[4]
-		additional_info_json = case_details_tuple[5]
+		(case_number, parties_involved,
+		case_filed_date, case_closed_date,
+		pacer_case_id, additional_info_json) = case_details_tuple
+		page_value_json = {}
 
 		#Save details into the database
-		case_filed_date = case_filed_date if case_filed_date != '' else None
+		case_filed_date = case_filed_date.strip('\n')
+		case_closed_date = case_filed_date.strip('\n')
+		case_filed_date = case_filed_date if c		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
+		"""ase_filed_date != '' else None
 		case_closed_date = case_closed_date if case_closed_date != '' else None
 		if case_filed_date is not None:
 			split_case_filed_date = case_filed_date.split('/')
@@ -385,18 +426,21 @@ class Parser():
 		if case_closed_date is not None:
 			split_case_closed_date = case_closed_date.split('/')
 			case_closed_date = split_case_closed_date[2] + '/' +  split_case_closed_date[0] + '/' + split_case_closed_date[1]
-			
+
 		#Save case related info into the table
 		self.connection_cursor.execute("SELECT id from page_content ORDER BY id DESC LIMIT 1")
 		page_content_id = self.connection_cursor.fetchall()
 		case_details_insert_query = """INSERT INTO case_details(page_content_id, pacer_case_id, case_number, parties_involved,
-									case_filed_date, case_closed_date)
+									case_filed		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
+		"""_date, case_closed_date)
 									VALUES(%s, %s, %s, %s, %s, %s)"""
 		self.connection_cursor.execute(case_details_insert_query,
-								(page_content_id, pacer_case_id, case_number, parties_involed,
+								(page_content_id, pacer_case_id, case_number, parties_involved,
 								case_filed_date, case_closed_date,))
 		self.database_connection.commit()
-
 
 		#Save addional info into the table
 		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
@@ -407,7 +451,6 @@ class Parser():
 		self.database_connection.commit()
 
 		#Save into the page_source_path table
-		page_value_json = {}
 		page_value_json['CASE'] = os.getcwd() + '/contents/case/' + file_name
 		page_value_json = json.dumps(page_value_json)
 		self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
@@ -415,7 +458,12 @@ class Parser():
 		page_source_path_insert_query = """INSERT INTO page_source_path(case_details_id, page_value_json)
 									VALUES(%s, %s)"""
 		self.connection_cursor.execute(page_source_path_insert_query, (case_details_id, page_value_json,))
-		self.database_connection.commit()
+		self.database_connection.commit()parse_case_details
 
 	def __del__(self):
+		"""
+			Destructor
+			Tasks:
+				1. Close the database connection
+		"""
 		self.database_connection.close()

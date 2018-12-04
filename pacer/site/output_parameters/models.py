@@ -10,14 +10,15 @@
 from django.db import models
 
 class PageContent(models.Model):
-    page_content_id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     page_path = models.CharField(max_length=330, blank=True)
     class Meta:
         db_table = u'page_content'
 
 class CaseDetails(models.Model):
-    case_id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     page_content = models.ForeignKey(PageContent)
+    pacer_case_id = models.CharField(max_length=165, blank=True)
     case_number = models.CharField(max_length=165, blank=True)
     parties_involved = models.CharField(max_length=765, blank=True)
     case_filed_date = models.DateField(null=True, blank=True)
@@ -25,15 +26,22 @@ class CaseDetails(models.Model):
     class Meta:
         db_table = u'case_details'
 
+class PageSourcePath(models.Model):
+    id = models.IntegerField(primary_key=True)
+    case_details = models.ForeignKey(CaseDetails, null=True, blank=True)
+    page_value_json = models.TextField(blank=True)
+    class Meta:
+        db_table = u'page_source_path'
+
 class AdditionalInfo(models.Model):
-    info_id = models.IntegerField(primary_key=True)
-    case = models.ForeignKey(CaseDetails, null=True, blank=True)
+    id = models.IntegerField(primary_key=True)
+    case_details = models.ForeignKey(CaseDetails, null=True, blank=True)
     additional_info_json = models.TextField(blank=True)
     class Meta:
         db_table = u'additional_info'
 
 class Extractor(models.Model):
-    extractor_id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     case_number = models.CharField(max_length=165, blank=True)
     case_status = models.CharField(max_length=165, blank=True)
     from_field_date = models.DateField(null=True, blank=True)
@@ -49,3 +57,4 @@ class Extractor(models.Model):
     exact_matches_only = models.IntegerField(null=True, blank=True)
     class Meta:
         db_table = u'extractor'
+

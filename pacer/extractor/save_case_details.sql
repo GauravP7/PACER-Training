@@ -1,6 +1,6 @@
-CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE DATABASE `pacer_case_details_test` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
-USE `pacer_case_details`;
+USE `pacer_case_details_test`;
 
 CREATE TABLE IF NOT EXISTS `extractor` (
 	`id` int NOT NULL AUTO_INCREMENT,
@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS  `case_details` (
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
     	PRIMARY KEY (`id`),
-    	FOREIGN KEY (`page_content_id`) REFERENCES page_content(`id`)
+    	FOREIGN KEY (`page_content_id`) REFERENCES page_content(`id`),
+			UNIQUE KEY case_details_key (case_number, pacer_case_id)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `page_source_path` (
