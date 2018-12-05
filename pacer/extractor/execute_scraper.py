@@ -12,10 +12,12 @@ is_login_validate_success = downloader_obj.validate_login_success(login_page_con
 # [ Step 3 of 9 ] : Parse the contents and get cookie.
 downloader_obj.set_cookie_value(login_page_contents)
 
+
 # [ Step 4 of 9 ] : Query as per the input criteria.
 case_details_page_contents = downloader_obj.get_case_details_page_contents()
 
 # [ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.
+
 file_names_list = downloader_obj.save_all_case_details_page(case_details_page_contents)
 
 # [ Step 6 of 9 ] : Display cost of the page.
