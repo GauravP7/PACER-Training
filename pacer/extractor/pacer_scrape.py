@@ -8,21 +8,23 @@ import json
 import datetime
 from bs4 import BeautifulSoup
 
-# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
+# [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
 #
-# [ Step 2 of 8 ] : Validate the Login.
+# [ Step 2 of 9 ] : Validate the Login.
 #
-# [ Step 3 of 8 ] : Parse the contents and get cookie.
+# [ Step 3 of 9 ] : Parse the contents and get cookie.
 #
-# [ Step 4 of 8 ] : Query as per the input criteria.
+# [ Step 4 of 9 ] : Query as per the input criteria.
 #
-# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
+# [ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.
 #
-# [ Step 6 of 8 ] : Save the Search Criteria.
+# [ Step 6 of 9 ] : Display cost of the page.
 #
-# [ Step 7 of 8 ] : Save the case details.
+# [ Step 7 of 9 ] : Save the Search Criteria.
 #
-# [ Step 8 of 8 ] : Logout from the website.
+# [ Step 8 of 9 ] : Save the case details.
+#
+# [ Step 9 of 9 ] : Logout from the website.
 
 class Extractor():
 	"""
@@ -55,11 +57,9 @@ class Extractor():
 		middle_name,
 		type,
 		exact_matches_only) = extractor_search_criteria[0]
-
 		if from_filed_date is not None:
 			split_from_filed_date = str(from_filed_date).split('-')
 			from_filed_date = split_from_filed_date[1] + '/' +  split_from_filed_date[2] + '/' + split_from_filed_date[0]
-
 		if to_filed_date is not None:
 			split_to_filed_date = str(to_filed_date).split('-')
 			to_filed_date = split_to_filed_date[1] + '/' +  split_to_filed_date[2] + '/' + split_to_filed_date[0]
@@ -119,6 +119,7 @@ class Extractor():
 			Tasks:
 				1. Close the database connection
 		"""
+
 		self.database_connection.close()
 
 class Downloader():
@@ -153,9 +154,9 @@ class Downloader():
 		#Initialize the cookie_value
 		self.pacer_session_cookie_value = ""
 
-		#Initializes the login credentials
-		self.username = 'tr1234'
-		self.password = 'Pass!234'
+		#Initialize the username and password
+		self.username = ''
+		self.password = ''
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -163,6 +164,12 @@ class Downloader():
 						      password="Code@mispl",
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
+
+	def set_credentials(self):
+		with open('/home/mis/DjangoProject/pacer/extractor/credentials.json') as credentials_json:
+			credentials_data = json.load(credentials_json)
+			self.username = credentials_data['username']
+			self.password = credentials_data['password']
 
 	def login_pacer(self):
 		"""
@@ -173,6 +180,7 @@ class Downloader():
 					pacer_session_cookie_value
 		"""
 
+		self.set_credentials()
 		credentials = {'login': self.username, 'key': self.password}
 		encoded_login_credentials = urllib.urlencode(credentials)
 		login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
@@ -380,6 +388,12 @@ class Parser():
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
 
+	def get_page_cost(self, case_details_page_contents):
+		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
+		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
+		cost = required_tags[::-1][0].text
+		print "This querying cost for this page:\t", cost
+
 	def parse_case_details_page(self, file_name):
 		"""
 			Parse the saved case pages
@@ -418,8 +432,8 @@ class Parser():
 			case_closed_date = ''
 
 		#Add the created date and last updated date
-		created_date = datetime.date.today().strftime('%Y/%m/%d')
-		last_updated_date = created_date
+		#created_date = datetime.date.today().strftime('%Y/%m/%d')
+		#last_updated_date = created_date
 
 		#Parse the additional info
 		additional_info_links = contents.find_all('a', class_='')
@@ -435,8 +449,7 @@ class Parser():
 		#Perform tuple packing
 		required_case_details = (case_number, parties_involved,
 								case_filed_date, case_closed_date,
-								pacer_case_id, additional_info_json,
-								created_date, last_updated_date)
+								pacer_case_id, additional_info_json)
 		return required_case_details
 
 	def save_case_details(self, case_details_tuple, file_name):
@@ -448,8 +461,9 @@ class Parser():
 
 		(case_number, parties_involved,
 		case_filed_date, case_closed_date,
-		pacer_case_id, additional_info_json,
-		created_date, last_updated_date) = case_details_tuple
+		pacer_case_id, additional_info_json) = case_details_tuple
+		METADATA = 1
+		DEFAULT = 2
 		page_value_json = {}
 
 		#Save details into the database
@@ -466,30 +480,27 @@ class Parser():
 
 		#Get Last updated date
 		self.connection_cursor.execute("""SELECT pacer_case_id from courtcase
-										  WHERE case_number = %s""",
-										  (case_number,))
+										  WHERE pacer_case_id = %s""",
+										  (pacer_case_id,))
 		existing_pacer_case_id = self.connection_cursor.fetchone()
 
 		#Check if existing pacer_case_id matches with the pacer_case_id of the case in hand
 		if existing_pacer_case_id:
-			if existing_pacer_case_id[0]:
-				if pacer_case_id == existing_pacer_case_id:
-					is_equal_pacer_case_id = True
-				elif pacer_case_id != existing_pacer_case_id:
-					is_equal_pacer_case_id = False
+			is_equal_pacer_case_id = True
 		else:
 			is_equal_pacer_case_id = False
 
 		#Inset case details that are not already existing
 		if not is_equal_pacer_case_id:
-			#Save case related info into the table
 			self.connection_cursor.execute("SELECT id from download_tracker ORDER BY id DESC LIMIT 1")
 			download_tracker_id = self.connection_cursor.fetchall()
-			courtcase_insert_query = """INSERT INTO courtcase(download_tracker_id, pacer_case_id, case_number,
+			courtcase_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
 										   parties_involved, case_filed_date, case_closed_date)
-										   VALUES(%s, %s, %s, %s, %s, %s)"""
+										   VALUES(%s, %s, %s, %s, %s, %s, %s)"""
+			courtcase_source_value = METADATA
 			self.connection_cursor.execute(courtcase_insert_query,
-									(download_tracker_id, pacer_case_id, case_number, parties_involved,
+									(download_tracker_id, courtcase_source_value, pacer_case_id,
+									case_number, parties_involved,
 									case_filed_date, case_closed_date,))
 			self.database_connection.commit()
 

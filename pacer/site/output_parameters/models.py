@@ -10,7 +10,7 @@
 from django.db import models
 
 class Extractor(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     case_number = models.CharField(max_length=165, blank=True)
     case_status = models.CharField(max_length=165, blank=True)
     from_field_date = models.DateField(null=True, blank=True)
@@ -28,34 +28,40 @@ class Extractor(models.Model):
         db_table = u'extractor'
 
 class DownloadTracker(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     page_path = models.CharField(max_length=330, blank=True)
     class Meta:
         db_table = u'download_tracker'
 
-class Courtcase(models.Model):
+class CourtcaseSource(models.Model):
     id = models.IntegerField(primary_key=True)
+    value = models.CharField(max_length=165, blank=True)
+    class Meta:
+        db_table = u'courtcase_source'
+
+class Courtcase(models.Model):
+    id = models.AutoField(primary_key=True)
     download_tracker = models.ForeignKey(DownloadTracker)
+    courtcase_source_value = models.ForeignKey(CourtcaseSource, db_column='courtcase_source_value')
     pacer_case_id = models.CharField(max_length=165, unique=True, blank=True)
     case_number = models.CharField(max_length=165, unique=True, blank=True)
     parties_involved = models.CharField(max_length=765, blank=True)
     case_filed_date = models.DateField(null=True, blank=True)
     case_closed_date = models.DateField(null=True, blank=True)
-    created_date = models.DateField(null=True, blank=True)
-    last_updated_date = models.DateField(null=True, blank=True)
     class Meta:
         db_table = u'courtcase'
 
 class AdditionalInfo(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     courtcase = models.ForeignKey(Courtcase, null=True, blank=True)
     additional_info_json = models.TextField(blank=True)
     class Meta:
         db_table = u'additional_info'
 
 class CourtcaseSourceDataPath(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     courtcase = models.ForeignKey(Courtcase, null=True, blank=True)
     page_value_json = models.TextField(blank=True)
     class Meta:
         db_table = u'courtcase_source_data_path'
+

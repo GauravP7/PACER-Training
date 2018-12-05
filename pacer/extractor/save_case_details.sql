@@ -26,19 +26,28 @@ CREATE TABLE IF NOT EXISTS  `download_tracker` (
     	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
+CREATE TABLE IF NOT EXISTS  `courtcase_source` (
+	`id` int NOT NULL AUTO_INCREMENT,
+	`value`  VARCHAR(55),
+    	PRIMARY KEY (`id`)
+) ENGINE=INNODB;
+
+INSERT INTO courtcase_source(value) VALUES('METADATA');
+INSERT INTO courtcase_source(value) VALUES('DEFAULT');
+
 CREATE TABLE IF NOT EXISTS  `courtcase` (
 	`id` int NOT NULL AUTO_INCREMENT,
   `download_tracker_id` int NOT NULL,
+	`courtcase_source_value` int NOT NULL,
 	`pacer_case_id` VARCHAR(55),
   `case_number` VARCHAR(55),
 	`parties_involved` VARCHAR(255),
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
-	`created_date` DATE,
-	`last_updated_date` DATE,
     	PRIMARY KEY (`id`),
     	FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`),
-			UNIQUE KEY courtcase_key (case_number, pacer_case_id)
+			UNIQUE KEY courtcase_key (case_number, pacer_case_id),
+			FOREIGN KEY (`courtcase_source_value`) REFERENCES courtcase_source(`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source_data_path` (
