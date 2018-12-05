@@ -1,19 +1,31 @@
-from output_parameters.models import PageContent
-from output_parameters.models import CaseDetails
+from output_parameters.models import DownloadTracker
+from output_parameters.models import Courtcase
 from output_parameters.models import AdditionalInfo
+from output_parameters.models import CourtcaseSource
+from output_parameters.models import CourtcaseSourceDataPath
 from django.contrib import admin
 
-class PageContentDisplay(admin.ModelAdmin):
-    list_display = ('page_content_id', 'page_path',)
+class DownloadTrackerDisplay(admin.ModelAdmin):
+    list_display = ('id', 'page_path',)
 
-class CaseDetailsDisplay(admin.ModelAdmin):
-    list_display = ('case_id', 'page_content', 'case_number', 'parties_involved', 'case_filed_date', 'case_closed_date',)
+class CourtcaseDisplay(admin.ModelAdmin):
+    list_display = ('id', 'pacer_case_id', 'case_number', 'parties_involved', 'case_filed_date', 'case_closed_date',)
+
+class CourtcaseSourceDisplay(admin.ModelAdmin):
+    list_display = ('id', 'value',)
 
 class AdditionalInfoDisplay(admin.ModelAdmin):
-    list_display = ('info_id', 'additional_info_json',)
+    list_display = ('id', 'additional_info_json',)
 
-admin.site.register(PageContent, PageContentDisplay)
+class CourtcaseSourceDataPathDisplay(admin.ModelAdmin):
+    list_display = ('id', 'page_value_json',)
 
-admin.site.register(CaseDetails, CaseDetailsDisplay)
+admin.site.register(DownloadTracker, DownloadTrackerDisplay)
+
+admin.site.register(Courtcase, CourtcaseDisplay)
+
+admin.site.register(CourtcaseSource, CourtcaseSourceDisplay)
+
+admin.site.register(CourtcaseSourceDataPath, CourtcaseSourceDataPathDisplay)
 
 admin.site.register(AdditionalInfo, AdditionalInfoDisplay)
