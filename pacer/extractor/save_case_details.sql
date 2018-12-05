@@ -1,6 +1,6 @@
-CREATE DATABASE `pacer_case_details_test` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
-USE `pacer_case_details_test`;
+USE `pacer_case_details`;
 
 CREATE TABLE IF NOT EXISTS `extractor` (
 	`id` int NOT NULL AUTO_INCREMENT,
@@ -20,37 +20,39 @@ CREATE TABLE IF NOT EXISTS `extractor` (
     	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
-CREATE TABLE IF NOT EXISTS  `page_content` (
+CREATE TABLE IF NOT EXISTS  `download_tracker` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`page_path`  VARCHAR(110),
     	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
-CREATE TABLE IF NOT EXISTS  `case_details` (
+CREATE TABLE IF NOT EXISTS  `courtcase` (
 	`id` int NOT NULL AUTO_INCREMENT,
-  `page_content_id` int NOT NULL,
+  `download_tracker_id` int NOT NULL,
 	`pacer_case_id` VARCHAR(55),
   `case_number` VARCHAR(55),
 	`parties_involved` VARCHAR(255),
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
+	`created_date` DATE,
+	`last_updated_date` DATE,
     	PRIMARY KEY (`id`),
-    	FOREIGN KEY (`page_content_id`) REFERENCES page_content(`id`),
-			UNIQUE KEY case_details_key (case_number, pacer_case_id)
+    	FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`),
+			UNIQUE KEY courtcase_key (case_number, pacer_case_id)
 ) ENGINE=INNODB;
 
-CREATE TABLE IF NOT EXISTS  `page_source_path` (
+CREATE TABLE IF NOT EXISTS  `courtcase_source_data_path` (
 	`id` int NOT NULL AUTO_INCREMENT,
-	`case_details_id` int,
+	`courtcase_id` int,
 	`page_value_json`  TEXT,
-    	FOREIGN KEY (`case_details_id`) REFERENCES case_details(`id`),
+    	FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`),
     	PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `additional_info` (
 	`id` int NOT NULL AUTO_INCREMENT,
-	`case_details_id` int,
+	`courtcase_id` int,
 	`additional_info_json` TEXT,
     	PRIMARY KEY (`id`),
-    	FOREIGN KEY (`case_details_id`) REFERENCES case_details(`id`)
+    	FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`)
 ) ENGINE=INNODB;

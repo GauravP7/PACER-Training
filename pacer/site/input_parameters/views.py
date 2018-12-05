@@ -1,11 +1,11 @@
 from django.template import Context, loader
 from django.http import HttpResponse
-from input_parameters.models import AdditionalInfo, CaseDetails, PageContent, Extractor
+from input_parameters.models import AdditionalInfo, Courtcase, DownloadTracker, Extractor
 
 def index(request):
     additional_info_list = AdditionalInfo.objects.all()
-    case_details_list = CaseDetails.objects.all()
-    page_content_list = PageContent.objects.all()
+    case_details_list = Courtcase.objects.all()
+    page_content_list = DownloadTracker.objects.all()
     extractor_data_list = Extractor.objects.all()
     html_template = loader.get_template('/home/mis/DjangoProject/pacer/site/input_parameters/Templates/index.html')
     contetnts = Context({'case_details_list': case_details_list,

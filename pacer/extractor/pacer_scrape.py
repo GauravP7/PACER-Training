@@ -41,20 +41,20 @@ class Extractor():
 		self.connection_cursor = self.database_connection.cursor()
 		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
 		extractor_search_criteria = self.connection_cursor.fetchall()
-		(	id,
-			case_number,
-			case_status,
-			from_filed_date,
-			to_filed_date,
-			from_last_entry_date,
-			to_last_entry_date,
-			nature_of_suit,
-			cause_of_action,
-			last_name,
-			first_name,
-			middle_name,
-			type,
-			exact_matches_only) = extractor_search_criteria[0]
+		(id,
+		case_number,
+		case_status,
+		from_filed_date,
+		to_filed_date,
+		from_last_entry_date,
+		to_last_entry_date,
+		nature_of_suit,
+		cause_of_action,
+		last_name,
+		first_name,
+		middle_name,
+		type,
+		exact_matches_only) = extractor_search_criteria[0]
 
 		if from_filed_date is not None:
 			split_from_filed_date = str(from_filed_date).split('-')
@@ -298,7 +298,7 @@ class Downloader():
 		case_details_file_object.close()
 
 		#Insert the value of variable page_path into the database
-		path_insert_query = """INSERT INTO page_content(page_path) VALUES(%s)"""
+		path_insert_query = """INSERT INTO download_tracker(page_path) VALUES(%s)"""
 		self.connection_cursor.execute(path_insert_query, (page_path,))
 		self.database_connection.commit()
 
@@ -322,6 +322,7 @@ class Downloader():
 			case_file_object.write(case_details_page_response.read())
 			case_count += 1
 			case_file_object.close()
+		print "Saved the files of all the case details"
 		return file_names_list
 
 	def logout(self):
@@ -402,10 +403,12 @@ class Parser():
 		#Check for special cases where the text 'All Defendants are missing'
 		if len(case_number) > 22: #The usual length of a case number
 			parties_involved = case_number[18:]
-			case_number = case_number[0:17]
+			case_number = case_number[0:13]
 		else:
 			parties_involved = case_details[1]
 
+		if len(case_number) > 13:
+			case_number = case_number[:-4]
 		case_filed_date = case_details[2]
 
 		#Validate for cases without close date
@@ -438,7 +441,7 @@ class Parser():
 
 	def save_case_details(self, case_details_tuple, file_name):
 		"""
-			Save teh parsed case details
+			Save the parsed case details
 			Arguments:
 					self, case_details_tuple, file_name
 		"""
@@ -462,42 +465,54 @@ class Parser():
 			case_closed_date = split_case_closed_date[2] + '/' +  split_case_closed_date[0] + '/' + split_case_closed_date[1]
 
 		#Get Last updated date
-		self.connection_cursor.execute("""SELECT pacer_case_id from case_details
+		self.connection_cursor.execute("""SELECT pacer_case_id from courtcase
 										  WHERE case_number = %s""",
 										  (case_number,))
-		is_exists_pacer_case_id = self.connection_cursor.fetchall()
+		existing_pacer_case_id = self.connection_cursor.fetchone()
 
-		if not is_exists_pacer_case_id:
+		#Check if existing pacer_case_id matches with the pacer_case_id of the case in hand
+		if existing_pacer_case_id:
+			if existing_pacer_case_id[0]:
+				if pacer_case_id == existing_pacer_case_id:
+					is_equal_pacer_case_id = True
+				elif pacer_case_id != existing_pacer_case_id:
+					is_equal_pacer_case_id = False
+		else:
+			is_equal_pacer_case_id = False
+
+		#Inset case details that are not already existing
+		if not is_equal_pacer_case_id:
 			#Save case related info into the table
-			self.connection_cursor.execute("SELECT id from page_content ORDER BY id DESC LIMIT 1")
-			page_content_id = self.connection_cursor.fetchall()
-			case_details_insert_query = """INSERT INTO case_details(page_content_id, pacer_case_id, case_number,
+			self.connection_cursor.execute("SELECT id from download_tracker ORDER BY id DESC LIMIT 1")
+			download_tracker_id = self.connection_cursor.fetchall()
+			courtcase_insert_query = """INSERT INTO courtcase(download_tracker_id, pacer_case_id, case_number,
 										   parties_involved, case_filed_date, case_closed_date)
 										   VALUES(%s, %s, %s, %s, %s, %s)"""
-			self.connection_cursor.execute(case_details_insert_query,
-									(page_content_id, pacer_case_id, case_number, parties_involved,
+			self.connection_cursor.execute(courtcase_insert_query,
+									(download_tracker_id, pacer_case_id, case_number, parties_involved,
 									case_filed_date, case_closed_date,))
 			self.database_connection.commit()
 
 			#Save addional info into the table
-			self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
-			case_details_id =  self.connection_cursor.fetchall()
-			additional_info_insert_query = """INSERT INTO additional_info(case_details_id, additional_info_json)
+			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
+			courtcase_id =  self.connection_cursor.fetchall()
+			additional_info_insert_query = """INSERT INTO additional_info(courtcase_id, additional_info_json)
 										VALUES(%s, %s)"""
-			self.connection_cursor.execute(additional_info_insert_query, (case_details_id, additional_info_json,))
+			self.connection_cursor.execute(additional_info_insert_query, (courtcase_id, additional_info_json,))
 			self.database_connection.commit()
 
-			#Save into the page_source_path table
-			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor//contents/case/' + file_name
+			#Save into the courtcase_source_data_path table
+			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/contents/case/' + file_name
 			page_value_json = json.dumps(page_value_json)
-			self.connection_cursor.execute("SELECT id from case_details ORDER BY id DESC LIMIT 1")
-			case_details_id =  self.connection_cursor.fetchall()
-			page_source_path_insert_query = """INSERT INTO page_source_path(case_details_id, page_value_json)
+			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
+			courtcase_id =  self.connection_cursor.fetchall()
+			courtcase_source_data_path_insert_query = """INSERT INTO courtcase_source_data_path(courtcase_id, page_value_json)
 										VALUES(%s, %s)"""
-			self.connection_cursor.execute(page_source_path_insert_query, (case_details_id, page_value_json,))
+			self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
 			self.database_connection.commit()
 		else:
 			print "This entry already exists"
+			return
 
 	def __del__(self):
 		"""
