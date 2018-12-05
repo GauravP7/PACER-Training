@@ -17,19 +17,19 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 	`middle_name`  VARCHAR(55),
 	`type`  VARCHAR(55),
 	`exact_matches_only`  TINYINT(1),
-    	PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `download_tracker` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`page_path`  VARCHAR(110),
-    	PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`value`  VARCHAR(55),
-    	PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 INSERT INTO courtcase_source(value) VALUES('METADATA');
@@ -44,24 +44,24 @@ CREATE TABLE IF NOT EXISTS  `courtcase` (
 	`parties_involved` VARCHAR(255),
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
-    	PRIMARY KEY (`id`),
-    	FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`),
-			UNIQUE KEY courtcase_key (case_number, pacer_case_id),
-			FOREIGN KEY (`courtcase_source_value`) REFERENCES courtcase_source(`id`)
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`),
+	UNIQUE KEY courtcase_key (case_number, pacer_case_id),
+	FOREIGN KEY (`courtcase_source_value`) REFERENCES courtcase_source(`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source_data_path` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`courtcase_id` int,
 	`page_value_json`  TEXT,
-    	FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`),
-    	PRIMARY KEY (`id`)
+  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`),
+  PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `additional_info` (
 	`id` int NOT NULL AUTO_INCREMENT,
 	`courtcase_id` int,
 	`additional_info_json` TEXT,
-    	PRIMARY KEY (`id`),
-    	FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`)
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`)
 ) ENGINE=INNODB;

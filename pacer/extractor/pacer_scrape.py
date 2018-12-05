@@ -20,8 +20,6 @@ from bs4 import BeautifulSoup
 #
 # [ Step 6 of 9 ] : Display cost of the page.
 #
-# [ Step 7 of 9 ] : Save the Search Criteria.
-#
 # [ Step 8 of 9 ] : Save the case details.
 #
 # [ Step 9 of 9 ] : Logout from the website.
@@ -333,6 +331,73 @@ class Downloader():
 		print "Saved the files of all the case details"
 		return file_names_list
 
+	def get_page_based_on_case_number(self, case_number):
+		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
+		case_file_name =  case_number.replace(':', '').replace('-', '_')
+		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
+		save_docket_page_path = docket_page_path + case_file_name + '_docket.html'
+		docket_page = open(save_docket_page_path, 'w')
+
+		#Fetch the pacer_case_id
+		self.connection_cursor.execute("""SELECT pacer_case_id FROM courtcase WHERE case_number = %s""", (case_number,))
+		pacer_case_id = self.connection_cursor.fetchone()[0]
+
+		#Get the unique numbers
+		docket_page_response = self.opener.open(docket_page_url)
+		docket_page_contents = docket_page_response.read()
+		minimum_size_of_form_number = 5
+
+		#Extract random numbers
+		docket_page_soup = BeautifulSoup(docket_page_contents, 'html.parser')
+		form_action_value = docket_page_soup.find('form').get('action')
+		action_content = re.findall(r"[0-9]*", form_action_value)
+
+		# Extract only the number part
+		for form_number in action_content:
+			if form_number.isdigit() and len(form_number) >= minimum_size_of_form_number:
+				required_form_number = form_number
+				break
+
+		#The parameters to be encoded and sent as a search criteria
+		docket_query_parameters = {
+			'view_comb_doc_text': '',
+			'all_case_ids': pacer_case_id,
+			'case_num': case_number,
+			'date_range_type': 'Filed',
+			'date_from': '',
+			'date_to': '',
+			'documents_numbered_from_': '',
+			'documents_numbered_to_': '',
+			'list_of_parties_and_counsel': 'on',
+			'terminated_parties': 'on',
+			'output_format': 'html',
+			'PreResetField': '',
+			'PreResetFields': '',
+			'sort1': 'oldest date first'
+		}
+
+		docket_details_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?" + required_form_number + "-L_1_0-1"
+		docket_query_parameters_encoded = urllib.urlencode(docket_query_parameters)
+		docket_query_request = urllib2.Request(docket_details_page_url, docket_query_parameters_encoded)
+		docket_page_response = self.opener.open(docket_query_request)
+		docket_page_contents = docket_page_response.read()
+		docket_page.write(docket_page_contents)
+		docket_page.close()
+
+		#Update the JSON in the courtcase_source_data_path
+		self.connection_cursor.execute("""SELECT id FROM courtcase WHERE case_number LIKE (%s)""", (case_number,))
+		courtcase_id = self.connection_cursor.fetchone()[0]
+
+		self.connection_cursor.execute("""SELECT page_value_json FROM courtcase_source_data_path WHERE courtcase_id = %s""", (courtcase_id,))
+		page_value_json = self.connection_cursor.fetchone()[0]
+		print page_value_json
+		page_value_json = json.loads(page_value_json)
+		page_value_json['DOCKET'] = save_docket_page_path
+		page_value_json = json.dumps(page_value_json)
+		courtcase_source_data_path_update_query = """UPDATE courtcase_source_data_path SET page_value_json = %s WHERE courtcase_id = %s"""
+		self.connection_cursor.execute(courtcase_source_data_path_update_query, (page_value_json, courtcase_id,))
+		self.database_connection.commit()
+
 	def logout(self):
 		"""
 			Logout from the website
@@ -370,8 +435,9 @@ class Parser():
 		Inherits:
 				None
 		Member functions:
-				1. parse_case_details_page(self, file_name)
-				2. save_case_details(self)
+				1. display_page_cost(self, case_details_page_contents)
+				2. parse_case_details_page(self, file_name)
+				3. save_case_details(self)
 	"""
 
 	def __init__(self):
@@ -388,7 +454,7 @@ class Parser():
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
 
-	def get_page_cost(self, case_details_page_contents):
+	def display_page_cost(self, case_details_page_contents):
 		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
 		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
 		cost = required_tags[::-1][0].text
