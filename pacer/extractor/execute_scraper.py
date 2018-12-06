@@ -21,7 +21,7 @@ class Scraper():
 		login_page_contents = self.downloader_obj.login_pacer()
 
 		# [ Step 2 of 8 ] : Validate the Login.
-		is_login_validate_success = self.downloader_obj.validate_login_success(login_page_contents)
+		self.downloader_obj.validate_login_success(login_page_contents)
 
 		# [ Step 3 of 8 ] : Parse the contents and get cookie.
 		self.downloader_obj.set_cookie_value(login_page_contents)

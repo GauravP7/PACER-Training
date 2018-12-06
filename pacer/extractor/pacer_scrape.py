@@ -350,7 +350,9 @@ class Downloader():
 			Arguments:
 					self, case_number
 		"""
+
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
+
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
