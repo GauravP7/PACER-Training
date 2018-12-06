@@ -9,7 +9,14 @@ class DownloadTrackerDisplay(admin.ModelAdmin):
     list_display = ('id', 'page_path',)
 
 class CourtcaseDisplay(admin.ModelAdmin):
-    list_display = ('id', 'pacer_case_id', 'case_number', 'parties_involved', 'case_filed_date', 'case_closed_date',)
+    list_display = ('id', 'get_courtcase_source_value', 'pacer_case_id', 'case_number', 'parties_involved', 'case_filed_date', 'case_closed_date',)
+
+    search_fields = ['case_number']
+
+    def get_courtcase_source_value(self, obj):
+        return obj.courtcase_source_value.value
+
+    get_courtcase_source_value.short_description = 'Courtcase Source Value'
 
 class CourtcaseSourceDisplay(admin.ModelAdmin):
     list_display = ('id', 'value',)
@@ -18,7 +25,12 @@ class AdditionalInfoDisplay(admin.ModelAdmin):
     list_display = ('id', 'additional_info_json',)
 
 class CourtcaseSourceDataPathDisplay(admin.ModelAdmin):
-    list_display = ('id', 'page_value_json',)
+    list_display = ('id', 'get_courtcase_id', 'page_value_json',)
+
+    def get_courtcase_id(self, obj):
+        return obj.courtcase.id
+
+    get_courtcase_id.short_description = 'Courtcase ID'
 
 admin.site.register(DownloadTracker, DownloadTrackerDisplay)
 
