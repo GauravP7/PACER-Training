@@ -5,17 +5,113 @@
 <body style="background-color:#FFEBCD">
 <h1 align="center"> Case Details from PACER </h1>
 <hr>
-
+<!--Extractor-->
+<h3 align="center">Search Criteria Table:</h3>
 <center>
-<h3>Input Parameters</h3>
-<a href="/search" target="_new">Search Criteria</a><br/>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Extractor ID</th>
+		<th>Case Number</th>
+		<th>Case Status</th>
+		<th>Case Filed Date</th>
+		<th>Case Closed Date</th>
+		<th>From Last Entry Date</th>
+		<th>To Last Entry Date</th>
+		<th>Nature of suit</th>
+		<th>Cause of action</th>
+		<th>Last Name</th>
+		<th>First Name</th>
+		<th>Middle Name</th>
+		<th>Type</th>
+		<th>Exact matches only</th>
+	</tr>
+	{% if extractor_data_list %}
+	{% for extractor_data in extractor_data_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ extractor_data.id }}</td>
+		<td>{{ extractor_data.case_number }}</td>
+		<td>{{ extractor_data.case_status }}</td>
+		<td>{{ extractor_data.from_field_date }}</td>
+		<td>{{ extractor_data.to_field_date }}</td>
+		<td>{{ extractor_data.from_last_entry_date }}</td>
+		<td>{{ extractor_data.to_last_entry_date }}</td>
+		<td>{{ extractor_data.nature_of_suit }}</td>
+		<td>{{ extractor_data.cause_of_action }}</td>
+		<td>{{ extractor_data.last_name }}</td>
+		<td>{{ extractor_data.first_name }}</td>
+		<td>{{ extractor_data.middle_name }}</td>
+		<td>{{ extractor_data.type }}</td>
+		<td>{{ extractor_data.exact_matches_only }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
 
-<h3>Output Parameters</h3>
-<a href="/content" target="_new">Page Content</a><br/>
-<a href="/details" target="_new">Case Details</a><br/>
-<a href="/addtional_info" target="_new">Addtional Information</a><br/>
+<!--Page Content-->
+<h3 align="center">Download Tracker Table:</h3>
 <center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Page Content ID</th>
+		<th>Page Path</th>
+	</tr>
+	{% if download_tracker_list %}
+	{% for download_tracker in download_tracker_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ download_tracker.id }}</td>
+		<td>{{ download_tracker.page_path }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
 
+<!--Court Case-->
+<h3 align="center">Court Case Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Court Case ID</th>
+		<th>Case Number</th>
+		<th>Parties invilved</th>
+		<th>Case Filed Date</th>
+		<th>Case Closed Date</th>
+	</tr>
+	{% if courtcase_list %}
+	{% for courtcase in courtcase_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ courtcase.id }}</td>
+		<td>{{ courtcase.case_number }}</td>
+		<td>{{ courtcase.parties_involved }}</td>
+		<td>{{ courtcase.case_filed_date }}</td>
+		<td>{{ courtcase.case_closed_date }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
+
+<!--Addtional Information-->
+<h3 align="center">Addtional Information Table:</h3>
+<center>
+<table border=1 cellpadding=10>
+	<tr style="background-color:#8A2BE2;color:#FFF;">
+		<th>Info ID</th>
+		<th>Case Number</th>
+		<th>Additional Info JSON</th>
+	</tr>
+	{% if additional_info_list %}
+	{% for additional_info in additional_info_list %}
+	<tr style="background-color:#BA55D3;color:#FFF;">
+		<td>{{ additional_info.id }}</td>
+		<td>{{ additional_info.case.case_number }}</td>
+		<td>{{ additional_info.additional_info_json }}</td>
+	</tr>
+{% endfor %}
+{% endif %}
+</table>
+</center>
 
 </body>
 </html>
