@@ -26,13 +26,20 @@ from bs4 import BeautifulSoup
 
 class Extractor():
 	"""
-		Class holds the search criteria as mentioned in the Schema.
+		Class holds the search criteria used to query the case details.
+		Member functions:
+				1. save_search_criteria(self)
 		Inherits:
 				None
 	"""
 
 	def __init__(self):
-
+		"""
+			Default constructor
+			Tasks:
+			 1. Setting up the database connection and cursor
+			 2. Initialize the search criteria, reading from the database
+		"""
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
 						      user="root",
@@ -81,7 +88,7 @@ class Extractor():
 
 	def save_search_criteria(self):
 		"""
-			Used to save the different search criteria used for querying.
+			Used to save the different search criteria used for querying courtcase.
 			Arguments:
 					self
 		"""
@@ -92,7 +99,7 @@ class Extractor():
 		to_last_entry_date = self.to_last_entry_date if self.to_last_entry_date != '' else None
 
 		#Split the date to save in dd/mm/yyyy format
-		#Because MySQL accepts only dd/mm/yyyy format
+		#Since MySQL accepts only this format
 		#It fails to save the date if it is in any other format
 		split_from_filed_date = self.from_filed_date.split('-')
 		from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
@@ -123,16 +130,18 @@ class Extractor():
 class Downloader():
 	"""
 		Class is used to download the case related pages from the PACER training website.
+		Member functions:
+				1. set_credentials(self)
+				2. login_pacer(self)
+				3. set_cookie_value(self, login_page_contents)
+				4. validate_login_success(self, login_page_contents)
+				5. get_case_details_page_contents(self)
+				6. save_all_case_details_page(self, case_details_page_contents)
+				7. get_page_based_on_case_number(self, case_number)
+				8. logout(self)
+				9. terminate_with_error_message(self)
 		Inherits:
 				None
-		Member functions:
-				1. login_pacer(self)
-				2. set_cookie_value(self, login_page_contents)
-				3. validate_login_success(self, login_page_contents)
-				4. get_case_details_page_contents(self)
-				5. save_all_case_details_page(self, case_details_page_contents)
-				6. logout(self)self.
-				7. terminate_with_error_message(self)
 	"""
 
 	def __init__(self):
@@ -142,7 +151,7 @@ class Downloader():
 			 1. sets up the opener
 			 2. Initializes login credentials
 			 3. Initializes cookie
-			 4. Setting up the database connection and cursor
+			 4. Sets up the database connection and cursor
 		"""
 
 		#Initialize the opener
@@ -164,6 +173,12 @@ class Downloader():
 		self.connection_cursor = self.database_connection.cursor()
 
 	def set_credentials(self):
+		"""
+			Used to set the username and password.
+			Arguments:
+					self
+		"""
+
 		with open('/home/mis/DjangoProject/pacer/extractor/credentials.json') as credentials_json:
 			credentials_data = json.load(credentials_json)
 			self.username = credentials_data['username']
@@ -220,12 +235,10 @@ class Downloader():
 
 		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 		login_page_h3_tags = login_page_soup.find_all('h3')
-
 		for h3_tag in login_page_h3_tags:
 			if "U.S. DISTRICT COURT" in str(h3_tag):
 				print "Login successful"
 				return True
-
 		return self.terminate_with_error_message()
 
 	def get_case_details_page_contents(self):
@@ -332,6 +345,12 @@ class Downloader():
 		return file_names_list
 
 	def get_page_based_on_case_number(self, case_number):
+		"""
+			Used if the extractor type is REFRESH_CASE, to save th page containing Docket.
+			Arguments:
+					self, case_number
+		"""
+		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
@@ -339,8 +358,12 @@ class Downloader():
 		docket_page = open(save_docket_page_path, 'w')
 
 		#Fetch the pacer_case_id
-		self.connection_cursor.execute("""SELECT pacer_case_id FROM courtcase WHERE case_number = %s""", (case_number,))
-		pacer_case_id = self.connection_cursor.fetchone()[0]
+		self.connection_cursor.execute("""SELECT pacer_case_id FROM courtcase WHERE case_number LIKE (%s)""", (case_number,))
+		pacer_case_id_tuple = self.connection_cursor.fetchone()
+		if pacer_case_id_tuple:
+			pacer_case_id = pacer_case_id_tuple[0]
+		else:
+			print "This case does not exist"
 
 		#Get the unique numbers
 		docket_page_response = self.opener.open(docket_page_url)
@@ -375,7 +398,6 @@ class Downloader():
 			'PreResetFields': '',
 			'sort1': 'oldest date first'
 		}
-
 		docket_details_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?" + required_form_number + "-L_1_0-1"
 		docket_query_parameters_encoded = urllib.urlencode(docket_query_parameters)
 		docket_query_request = urllib2.Request(docket_details_page_url, docket_query_parameters_encoded)
@@ -388,14 +410,18 @@ class Downloader():
 		self.connection_cursor.execute("""SELECT id FROM courtcase WHERE case_number LIKE (%s)""", (case_number,))
 		courtcase_id = self.connection_cursor.fetchone()[0]
 
+		#Append the path of saved Docket file
 		self.connection_cursor.execute("""SELECT page_value_json FROM courtcase_source_data_path WHERE courtcase_id = %s""", (courtcase_id,))
 		page_value_json = self.connection_cursor.fetchone()[0]
-		print page_value_json
 		page_value_json = json.loads(page_value_json)
 		page_value_json['DOCKET'] = save_docket_page_path
 		page_value_json = json.dumps(page_value_json)
 		courtcase_source_data_path_update_query = """UPDATE courtcase_source_data_path SET page_value_json = %s WHERE courtcase_id = %s"""
 		self.connection_cursor.execute(courtcase_source_data_path_update_query, (page_value_json, courtcase_id,))
+
+		#Change METADATA TO DEFAULT
+		courtcase_update_query = """UPDATE courtcase SET courtcase_source_value = %s WHERE pacer_case_id = %s"""
+		self.connection_cursor.execute(courtcase_update_query, (2, pacer_case_id,))
 		self.database_connection.commit()
 
 	def logout(self):
@@ -432,12 +458,12 @@ class Downloader():
 class Parser():
 	"""
 		Class is used to scrape the case related data from the PACER training website.
-		Inherits:
-				None
 		Member functions:
 				1. display_page_cost(self, case_details_page_contents)
 				2. parse_case_details_page(self, file_name)
-				3. save_case_details(self)
+				3. save_case_details(self,  case_details_tuple, file_name)
+		Inherits:
+				None
 	"""
 
 	def __init__(self):
@@ -455,6 +481,12 @@ class Parser():
 		self.connection_cursor = self.database_connection.cursor()
 
 	def display_page_cost(self, case_details_page_contents):
+		"""
+			Used to display the cost of the parsed page
+			Arguments:
+					self, case_details_page_contents
+		"""
+
 		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
 		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
 		cost = required_tags[::-1][0].text
@@ -487,8 +519,9 @@ class Parser():
 		else:
 			parties_involved = case_details[1]
 
+		#Remove the last four character like -RJA
 		if len(case_number) > 13:
-			case_number = case_number[:-4]
+			case_number = case_number[0:13]
 		case_filed_date = case_details[2]
 
 		#Validate for cases without close date
@@ -496,10 +529,6 @@ class Parser():
 			case_closed_date = case_details[3]
 		else:
 			case_closed_date = ''
-
-		#Add the created date and last updated date
-		#created_date = datetime.date.today().strftime('%Y/%m/%d')
-		#last_updated_date = created_date
 
 		#Parse the additional info
 		additional_info_links = contents.find_all('a', class_='')
@@ -570,7 +599,7 @@ class Parser():
 									case_filed_date, case_closed_date,))
 			self.database_connection.commit()
 
-			#Save addional info into the table
+			#Save contents into the addional_info table
 			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
 			courtcase_id =  self.connection_cursor.fetchall()
 			additional_info_insert_query = """INSERT INTO additional_info(courtcase_id, additional_info_json)
@@ -579,7 +608,7 @@ class Parser():
 			self.database_connection.commit()
 
 			#Save into the courtcase_source_data_path table
-			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/contents/case/' + file_name
+			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name
 			page_value_json = json.dumps(page_value_json)
 			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
 			courtcase_id =  self.connection_cursor.fetchall()
@@ -588,8 +617,7 @@ class Parser():
 			self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
 			self.database_connection.commit()
 		else:
-			print "This entry already exists"
-			return
+			pass
 
 	def __del__(self):
 		"""
