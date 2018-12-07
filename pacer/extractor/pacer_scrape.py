@@ -261,7 +261,7 @@ class Downloader():
 					case_details_page_contents
 
 		"""
-
+https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b0330cacf6/pacer/extractor/pacer_scrape.py#L283
 		query_page_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl'
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
@@ -284,6 +284,7 @@ class Downloader():
 			pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
 		else:
 			pacer_case_id = ''
+			
 		#The parameters to be encoded and sent as a search criteria
 		query_parameters = {
 			'UserType': self.extractor_object.user_type,
