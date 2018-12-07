@@ -8,6 +8,7 @@
 # into your database.
 
 from django.db import models
+from django import forms
 
 class ExtractorType(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -31,8 +32,6 @@ class Extractor(models.Model):
     middle_name = models.CharField(max_length=165, blank=True)
     type = models.CharField(max_length=165, blank=True)
     exact_matches_only = models.IntegerField(null=True, blank=True)
-    def __unicode__(self):
-        return str(self.extractor_type.extractor_type_value)
     class Meta:
         db_table = u'extractor'
 

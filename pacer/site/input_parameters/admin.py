@@ -15,17 +15,11 @@ class ExtractorDisplay(admin.ModelAdmin):
 
     get_extractor_type_value.short_description = 'Courtcase type Value'
 
-class CategoryChoiceField(forms.ModelChoiceField):
-     def label_from_instance(self, obj):
-         return obj.extractor_type.extractor_type_value
-
-def formfield_for_foreignkey(self, db_field, request, **kwargs):
-    if db_field.name == 'extractor_type':
-        return CategoryChoiceField(queryset=Extractor.objects.all())
-    return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
 class ExtractorTypeDisplay(admin.ModelAdmin):
     list_display = ('id','extractor_type_value',)
+
+    def __unicode__(self):
+        return self.extractor_type.extractor_type_value
 
 admin.site.register(Extractor, ExtractorDisplay)
 admin.site.register(ExtractorType, ExtractorTypeDisplay)

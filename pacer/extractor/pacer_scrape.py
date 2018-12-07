@@ -172,6 +172,8 @@ class Downloader():
 		#Set the object for find_case module
 		self.find_case_object = find_case.FindCase()
 
+		#Creating the extractor obj
+		self.extractor_object = Extractor()
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -278,21 +280,23 @@ class Downloader():
 
 		#Now we start hitting the content page
 		data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
-		extractor_object = Extractor()
-
+		if self.extractor_object.case_number != '':
+			pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
+		else:
+			pacer_case_id = ''
 		#The parameters to be encoded and sent as a search criteria
 		query_parameters = {
-			'UserType': extractor_object.user_type,
-			'all_case_ids': extractor_object.all_case_ids,
-			'case_num': extractor_object.case_number,
-			'Qry_filed_from': extractor_object.from_filed_date,
-			'Qry_filed_to': extractor_object.to_filed_date,
-			'lastentry_from': extractor_object.from_last_entry_date,
-			'lastentry_to': extractor_object.to_last_entry_date,
-			'last_name': extractor_object.last_name,
-			'first_name': extractor_object.first_name,
-			'middle_name': extractor_object.middle_name,
-			'person_type': extractor_object.type
+			'UserType': self.extractor_object.user_type,
+			'all_case_ids': pacer_case_id,
+			'case_num': self.extractor_object.case_number,
+			'Qry_filed_from': self.extractor_object.from_filed_date,
+			'Qry_filed_to': self.extractor_object.to_filed_date,
+			'lastentry_from': self.extractor_object.from_last_entry_date,
+			'lastentry_to': self.extractor_object.to_last_entry_date,
+			'last_name': self.extractor_object.last_name,
+			'first_name': self.extractor_object.first_name,
+			'middle_name': self.extractor_object.middle_name,
+			'person_type': self.extractor_object.type
 		}
 
 		query_parameters_encoded = urllib.urlencode(query_parameters)
@@ -317,7 +321,7 @@ class Downloader():
 		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 		case_count = 0
 		page_path = '/home/mis/DjangoProject/pacer/extractor/Contents'
-		file_name = 'case_details.html'
+		file_name = 'case_details '+ str(datetime.datetime.now().strftime('%d-%m-%y  %H:%M:%S')) +'.html'
 
 		#Save the case details page having all case information
 		case_details_file_object = open(page_path + '/' + file_name, 'w')
@@ -326,7 +330,7 @@ class Downloader():
 
 		#Insert the value of variable page_path into the database
 		path_insert_query = """INSERT INTO download_tracker(page_path) VALUES(%s)"""
-		self.connection_cursor.execute(path_insert_query, (page_path,))
+		self.connection_cursor.execute(path_insert_query, (page_path + '/' + file_name,))
 		self.database_connection.commit()
 
 		#Collect all the links
@@ -358,8 +362,9 @@ class Downloader():
 			Arguments:
 					self, case_number
 		"""
-
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
+		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
+		case_number = case_number_matched.group(0)	
 		pacer_case_id = 0
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
@@ -503,7 +508,7 @@ class Parser():
 		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
 		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
 		cost = required_tags[::-1][0].text
-		print "This querying cost for this page:\t", cost
+		print "This querying cost for this page:\t$", cost
 
 	def parse_case_details_page(self, file_name):
 		"""
@@ -525,16 +530,10 @@ class Parser():
 		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
 		case_number = case_details[0]
 
-		#Check for special cases where the text 'All Defendants are missing'
-		if len(case_number) > 22: #The usual length of a case number
-			parties_involved = case_number[18:]
-			case_number = case_number[0:13]
-		else:
-			parties_involved = case_details[1]
-
 		#Remove the last four character like -RJA
-		if len(case_number) > 13:
-			case_number = case_number[0:13]
+		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
+		case_number = case_number_matched.group(0)
+		parties_involved = case_details[1]
 		case_filed_date = case_details[2]
 
 		#Validate for cases without close date
