@@ -6,6 +6,7 @@ import re
 import MySQLdb
 import json
 import datetime
+import find_case
 from bs4 import BeautifulSoup
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
@@ -49,6 +50,7 @@ class Extractor():
 		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
 		extractor_search_criteria = self.connection_cursor.fetchall()
 		(id,
+		extractor_type_id,
 		case_number,
 		case_status,
 		from_filed_date,
@@ -72,6 +74,7 @@ class Extractor():
 		#Initialize the search criteria
 		self.user_type = ''
 		self.all_case_ids = 0
+		self.extractor_type_id = extractor_type_id
 		self.case_number = case_number if case_number != '' else ''
 		self.case_status = case_status
 		self.from_filed_date = from_filed_date if from_filed_date != None else ''
@@ -131,15 +134,16 @@ class Downloader():
 	"""
 		Class is used to download the case related pages from the PACER training website.
 		Member functions:
-				1. set_credentials(self)
-				2. login_pacer(self)
-				3. set_cookie_value(self, login_page_contents)
-				4. validate_login_success(self, login_page_contents)
-				5. get_case_details_page_contents(self)
-				6. save_all_case_details_page(self, case_details_page_contents)
-				7. get_page_based_on_case_number(self, case_number)
-				8. logout(self)
-				9. terminate_with_error_message(self)
+				 1. set_credentials(self)
+				 2. login_pacer(self)
+				 3. set_cookie_value(self, login_page_contents)
+				 4. validate_login_success(self, login_page_contents)
+				 5. get_case_details_page_contents(self)
+				 6. save_all_case_details_page(self, case_details_page_contents)
+				 7. get_page_based_on_case_number(self, case_number)
+				 8. import_case_new(self, case_number)
+				 9. logout(self)
+				10. terminate_with_error_message(self)
 		Inherits:
 				None
 	"""
@@ -164,6 +168,10 @@ class Downloader():
 		#Initialize the username and password
 		self.username = ''
 		self.password = ''
+
+		#Set the object for find_case module
+		self.find_case_object = find_case.FindCase()
+
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -350,20 +358,17 @@ class Downloader():
 			Arguments:
 					self, case_number
 		"""
+
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
+		pacer_case_id = 0
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
 		save_docket_page_path = docket_page_path + case_file_name + '_docket.html'
 		docket_page = open(save_docket_page_path, 'w')
 
-		#Fetch the pacer_case_id
-		self.connection_cursor.execute("""SELECT pacer_case_id FROM courtcase WHERE case_number LIKE (%s)""", (case_number,))
-		pacer_case_id_tuple = self.connection_cursor.fetchone()
-		if pacer_case_id_tuple:
-			pacer_case_id = pacer_case_id_tuple[0]
-		else:
-			print "This case does not exist"
+		#Fetch the pacer_case_id using the find_case module
+		pacer_case_id = self.find_case_object.get_pacer_case_id( case_number, self.opener)
 
 		#Get the unique numbers
 		docket_page_response = self.opener.open(docket_page_url)
@@ -423,6 +428,14 @@ class Downloader():
 		courtcase_update_query = """UPDATE courtcase SET courtcase_source_value = %s WHERE pacer_case_id = %s"""
 		self.connection_cursor.execute(courtcase_update_query, (2, pacer_case_id,))
 		self.database_connection.commit()
+		print "Refeshed the case ", case_number
+
+	def save_new_case(self, page_contents, case_number):
+	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
+		case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
+		case_file_object.write(page_contents)
+
+		return file_name
 
 	def logout(self):
 		"""
