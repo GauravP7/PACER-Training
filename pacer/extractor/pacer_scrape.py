@@ -363,10 +363,12 @@ https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b
 			Arguments:
 					self, case_number
 		"""
+
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
 		case_number = case_number_matched.group(0)	
 		pacer_case_id = 0
+
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
