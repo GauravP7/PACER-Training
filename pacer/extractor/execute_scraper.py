@@ -6,7 +6,6 @@ class Scraper():
 		self.downloader_obj = pacer_scraper.Downloader()
 		self.parser_obj = pacer_scraper.Parser()
 		self.extractor_obj = pacer_scraper.Extractor()
-
 		self.extractor_type = ''
 
 	def set_extractor_type(self):
@@ -15,7 +14,7 @@ class Scraper():
 		elif self.extractor_obj.extractor_type_id == 2:
 			self.extractor_type = "REFRESH_CASE"
 		elif self.extractor_obj.extractor_type_id == 3:
-			self.extractor_type = "IMPORT_CASE"
+			self.extractor_type = "PACER_IMPORT_CASE"
 		print "The extractor type is:\t", self.extractor_type
 
 	def run(self):
@@ -36,6 +35,7 @@ class Scraper():
 
 		#Set the extractor type
 		if self.extractor_type == "DATE_RANGE":
+			
 			# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 			file_names_list = self.downloader_obj.save_all_case_details_page(case_details_page_contents)
 
@@ -50,7 +50,7 @@ class Scraper():
 		elif self.extractor_type == "REFRESH_CASE":
 			 self.downloader_obj.get_page_based_on_case_number(self.extractor_obj.case_number)
 
-		elif self.extractor_type == "IMPORT_CASE":
+		elif self.extractor_type == "PACER_IMPORT_CASE":
 
 			# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 			new_case_file_name = self.downloader_obj.save_new_case(case_details_page_contents, self.extractor_obj.case_number)
