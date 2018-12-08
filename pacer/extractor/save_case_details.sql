@@ -2,8 +2,20 @@ CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 USE `pacer_case_details`;
 
+
+CREATE TABLE IF NOT EXISTS `extractor_type` (
+	`id` INT NOT NULL AUTO_INCREMENT,
+	`extractor_type_value` VARCHAR(55),
+	PRIMARY KEY(`id`)
+) ENGINE=INNODB;
+
+INSERT INTO extractor_type(extractor_type_value) VALUES('DATE_RANGE');
+INSERT INTO extractor_type(extractor_type_value) VALUES('REFRESH_CASE');
+INSERT INTO extractor_type(extractor_type_value) VALUES('IMPORT_CASE');
+
 CREATE TABLE IF NOT EXISTS `extractor` (
-	`id` int NOT NULL AUTO_INCREMENT,
+	`id` INT NOT NULL AUTO_INCREMENT,
+	`extractor_type_id` INT,
 	`case_number`  VARCHAR(55),
 	`case_status`  VARCHAR(55),
 	`from_field_date`  DATE,
@@ -17,17 +29,18 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 	`middle_name`  VARCHAR(55),
 	`type`  VARCHAR(55),
 	`exact_matches_only`  TINYINT(1),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+	FOREIGN KEY (`extractor_type_id`) REFERENCES extractor_type(`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `download_tracker` (
-	`id` int NOT NULL AUTO_INCREMENT,
+	`id` INT NOT NULL AUTO_INCREMENT,
 	`page_path`  VARCHAR(110),
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source` (
-	`id` int NOT NULL AUTO_INCREMENT,
+	`id` INT NOT NULL AUTO_INCREMENT,
 	`value`  VARCHAR(55),
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
@@ -36,9 +49,9 @@ INSERT INTO courtcase_source(value) VALUES('METADATA');
 INSERT INTO courtcase_source(value) VALUES('DEFAULT');
 
 CREATE TABLE IF NOT EXISTS  `courtcase` (
-	`id` int NOT NULL AUTO_INCREMENT,
-  `download_tracker_id` int NOT NULL,
-	`courtcase_source_value` int NOT NULL,
+	`id` INT NOT NULL AUTO_INCREMENT,
+  `download_tracker_id` INT NOT NULL,
+	`courtcase_source_value` INT NOT NULL,
 	`pacer_case_id` VARCHAR(55),
   `case_number` VARCHAR(55),
 	`parties_involved` VARCHAR(255),
@@ -51,16 +64,16 @@ CREATE TABLE IF NOT EXISTS  `courtcase` (
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source_data_path` (
-	`id` int NOT NULL AUTO_INCREMENT,
-	`courtcase_id` int,
+	`id` INT NOT NULL AUTO_INCREMENT,
+	`courtcase_id` INT,
 	`page_value_json`  TEXT,
   FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`),
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `additional_info` (
-	`id` int NOT NULL AUTO_INCREMENT,
-	`courtcase_id` int,
+	`id` INT NOT NULL AUTO_INCREMENT,
+	`courtcase_id` INT,
 	`additional_info_json` TEXT,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`)
