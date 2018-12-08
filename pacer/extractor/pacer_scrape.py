@@ -572,13 +572,15 @@ class Parser():
 
 		#Check for special cases where the text 'All Defendants are missing'
 		if len(case_number) > 25:
-			parties_involved = case_number[18:]
-			case_number = case_number[0:13]
+			parties_involved = case_number[20:]
+			case_number = case_number[0:20]
 		else:
 			parties_involved = case_details[1]
+		case_number = case_number.strip(r'\s*|\n')
+		print case_number
 
 		#Remove the last four character like -RJA
-		case_number_matched = re.match(r'(?P<upto_five_digits>^\d{1}:\d{2}\-[a-z]{2}\-\d{5})\-([A-Z]{3}\-?)*(?P<last_digit>\d{1})', case_number)
+		case_number_matched = re.match(r'(?P<upto_five_digits>^\d{1}:\d{2}\-[a-z]{2}\-\d{5})\-([A-Z]{3}\-?)*(?P<last_digit>\d{1})?', case_number)
 		if case_number_matched:
 			case_number_group_dict = case_number_matched.groupdict()
 			print case_number_group_dict
@@ -586,6 +588,7 @@ class Parser():
 				case_number = str(case_number_group_dict['upto_five_digits']) + '-' + str(case_number_group_dict['last_digit'])
 			else:
 				case_number = str(case_number_group_dict['upto_five_digits'])
+			print case_number_group_dict
 
 		case_filed_date = case_details[2]
 
