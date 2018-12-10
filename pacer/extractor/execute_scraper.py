@@ -1,67 +1,80 @@
 import pacer_scrape as pacer_scraper
+import find_case
 
 class Scraper():
 
 	def __init__(self):
-		self.downloader_obj = pacer_scraper.Downloader()
-		self.parser_obj = pacer_scraper.Parser()
-		self.extractor_obj = pacer_scraper.Extractor()
-		self.extractor_type = ''
-
-	def set_extractor_type(self):
-		if self.extractor_obj.extractor_type_id == 1:
-			self.extractor_type = "DATE_RANGE"
-		elif self.extractor_obj.extractor_type_id == 2:
-			self.extractor_type = "REFRESH_CASE"
-		elif self.extractor_obj.extractor_type_id == 3:
-			self.extractor_type = "PACER_IMPORT_CASE"
-		print "The extractor type is:\t", self.extractor_type
+		self.downloader_object = pacer_scraper.Downloader()
+		self.parser_object = pacer_scraper.Parser()
+		self.extractor_object = pacer_scraper.Extractor()
+		self.find_case_object = find_case.FindCase()
+		self.extractor_type = self.extractor_object.set_extractor_type()
 
 	def run(self):
 
 		# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
-		login_page_contents = self.downloader_obj.login_pacer()
+		login_page_contents = self.downloader_object.login_pacer()
 
 		# [ Step 2 of 8 ] : Validate the Login.
-		self.downloader_obj.validate_login_success(login_page_contents)
+		self.downloader_object.validate_login_success(login_page_contents)
 
 		# [ Step 3 of 8 ] : Parse the contents and get cookie.
-		self.downloader_obj.set_cookie_value(login_page_contents)
-
-		self.set_extractor_type()
+		self.downloader_object.set_cookie_value(login_page_contents)
 
 		# [ Step 4 of 8 ] : Query as per the input criteria.
-		case_details_page_contents = self.downloader_obj.get_case_details_page_contents()
+		case_details_page_contents = self.downloader_object.get_case_details_page_contents()
 
 		#Set the extractor type
-		if self.extractor_type == "DATE_RANGE":
-			
-			# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
-			file_names_list = self.downloader_obj.save_all_case_details_page(case_details_page_contents)
+		while True:
+			if self.extractor_type == "DATE_RANGE":
+				print "Extractor Type:\tDATE_RANGE"
 
-			# [ Step 6 of 8 ] : Display cost of the page.
-			self.parser_obj.display_page_cost(case_details_page_contents)
+				# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
+				#Save the HTML file containing all the case details
+				self.downloader_object.save_all_case_details_page(case_details_page_contents)
 
-			# [ Step 7 of 8 ] : Save the case details.
-			for file_name in file_names_list:
-				case_details_tuple = self.parser_obj.parse_case_details_page(file_name)
-				self.parser_obj.save_case_details(case_details_tuple, file_name)
+				# [ Step 6 of 8 ] : Display cost of the page.
+				self.parser_object.display_page_cost(case_details_page_contents)
+				self.extractor_type = "PARSE_FILE"
+				continue
 
-		elif self.extractor_type == "REFRESH_CASE":
-			 self.downloader_obj.get_page_based_on_case_number(self.extractor_obj.case_number)
+			elif self.extractor_type == "PARSE_FILE":
+				print "Extractor Type:\tPARSE_FILE"
+				case_details_list = self.parser_object.get_metadata_page()
+				self.parser_object.save_metadata_page_contents(case_details_list)
+				self.extractor_type = "REFRESH_CASE"
+				continue
 
-		elif self.extractor_type == "PACER_IMPORT_CASE":
+			elif self.extractor_type == "REFRESH_CASE":
+				print "Extractor Type:\tREFRESH_CASE"
+				if self.extractor_object.case_number == '':
+					self.downloader_object.save_indivisual_cases(case_details_page_contents)
+				elif self.extractor_object.case_number != '':
+					self.downloader_object.get_page_based_on_case_number(self.extractor_object.case_number)
+				break
 
-			# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
-			new_case_file_name = self.downloader_obj.save_new_case(case_details_page_contents, self.extractor_obj.case_number)
+			elif self.extractor_type == "PACER_IMPORT_CASE":
+				print "Extractor Type:\tPACER_IMPORT_CASE"
 
-			# [ Step 7 of 8 ] : Save the case details.
-			case_details_tuple = self.parser_obj.parse_case_details_page(new_case_file_name)
-			self.parser_obj.save_case_details(case_details_tuple, new_case_file_name)
-			self.downloader_obj.get_page_based_on_case_number(self.extractor_obj.case_number)
+				is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
+
+				if not is_exists_pacer_case_id:
+					print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
+
+					# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
+					new_case_file_name = self.downloader_object.save_import_case(case_details_page_contents, self.extractor_object.case_number)
+
+					# [ Step 7 of 8 ] : Save the case details.
+					case_details_tuple = self.parser_object.parse_case_details_page(new_case_file_name)
+					self.parser_object.save_case_details(case_details_tuple, new_case_file_name)
+				else:
+					#REFRESH_CASE if the case already exists
+					self.extractor_type = "REFRESH_CASE"
+					continue
+				break
 
 		# [ Step 8 of 8 ] : Logout from the website.
-		self.downloader_obj.logout()
+		self.downloader_object.logout()
 
 
 scraper_object = Scraper()

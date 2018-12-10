@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `extractor_type` (
 INSERT INTO extractor_type(extractor_type_value) VALUES('DATE_RANGE');
 INSERT INTO extractor_type(extractor_type_value) VALUES('REFRESH_CASE');
 INSERT INTO extractor_type(extractor_type_value) VALUES('IMPORT_CASE');
+INSERT INTO extractor_type(extractor_type_value) VALUES('PARSE_FILE');
 
 CREATE TABLE IF NOT EXISTS `extractor` (
 	`id` INT NOT NULL AUTO_INCREMENT,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 
 CREATE TABLE IF NOT EXISTS  `download_tracker` (
 	`id` INT NOT NULL AUTO_INCREMENT,
+	`is_parsed`  TINYINT(1),
 	`page_path`  VARCHAR(110),
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB;

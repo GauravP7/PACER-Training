@@ -8,7 +8,6 @@ class FindCase():
         find_case_url = "https://dcecf.psc.uscourts.gov/cgi-bin/possible_case_numbers.pl?" + case_number
         find_case_xml_response = opener.open(find_case_url)
         find_case_xml_contents = find_case_xml_response.read()
-        import pdb; pdb.set_trace()
         find_case_soup = BeautifulSoup(find_case_xml_contents, 'html.parser')
         case_tag = find_case_soup.find('case')
         return case_tag['id']
