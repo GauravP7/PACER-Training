@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
 #
+
 # [ Step 2 of 9 ] : Validate the Login.
 #
 # [ Step 3 of 9 ] : Parse the contents and get cookie.
@@ -150,6 +151,7 @@ class Extractor():
 			Tasks:
 				1. Close the database connection
 		"""
+
 
 		self.database_connection.close()
 
@@ -295,7 +297,7 @@ class Downloader():
 					case_details_page_contents
 
 		"""
-https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b0330cacf6/pacer/extractor/pacer_scrape.py#L283
+ 
 		query_page_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl'
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
