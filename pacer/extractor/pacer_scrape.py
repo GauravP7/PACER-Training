@@ -295,7 +295,7 @@ class Downloader():
 					case_details_page_contents
 
 		"""
-
+https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b0330cacf6/pacer/extractor/pacer_scrape.py#L283
 		query_page_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl'
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
@@ -407,6 +407,7 @@ class Downloader():
 		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
 		case_number = case_number_matched.group(0)
 		pacer_case_id = 0
+
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
