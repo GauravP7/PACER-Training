@@ -25,6 +25,25 @@ from bs4 import BeautifulSoup
 #
 # [ Step 9 of 9 ] : Logout from the website.
 
+class ExtractorType():
+	"""
+		Class holds the different extractor types used for extracting the data.
+		Inherits:
+				None
+	"""
+
+	def __init__(self):
+		"""
+			Default constructor
+			Tasks:
+			 1. Initialize the extractor type string constants
+		"""
+
+		self.extractor_type = ''
+		self.DATE_RANGE = "DATE_RANGE"
+		self.REFRESH_CASE = "REFRESH_CASE"
+		self.PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
+
 class Extractor():
 	"""
 		Class holds the search criteria used to query the case details.
@@ -48,6 +67,8 @@ class Extractor():
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
 		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
+
+		#Unpack tuples for extractor fields
 		extractor_search_criteria = self.connection_cursor.fetchall()
 		(id,
 		extractor_type_id,
@@ -70,6 +91,8 @@ class Extractor():
 		if to_filed_date is not None:
 			split_to_filed_date = str(to_filed_date).split('-')
 			to_filed_date = split_to_filed_date[1] + '/' +  split_to_filed_date[2] + '/' + split_to_filed_date[0]
+
+		self.extractor_type_id = extractor_type_id
 
 		#Initialize the search criteria
 		self.user_type = ''
@@ -172,8 +195,19 @@ class Downloader():
 		#Set the object for find_case module
 		self.find_case_object = find_case.FindCase()
 
+		#Create ExtractorType object
+		self.extractor_type_obj = ExtractorType()
+
 		#Creating the extractor obj
 		self.extractor_object = Extractor()
+
+		#Set the extractor type
+		if self.extractor_object.extractor_type_id == 1:
+			self.extractor_type_obj.extractor_type = self.extractor_type_obj.DATE_RANGE
+		elif self.extractor_object.extractor_type_id == 2:
+			self.extractor_type_obj.extractor_type = self.extractor_type_obj.REFRESH_CASE
+		elif self.extractor_object.extractor_type_id == 3:
+			self.extractor_type_obj.extractor_type = self.extractor_type_obj.PACER_IMPORT_CASE
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -266,6 +300,7 @@ https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
 		minimum_size_of_form_number = 5
+		pacer_case_id = ''
 
 		#Extract random numbers
 		query_page_soup = BeautifulSoup(query_page_contents, 'html.parser')
@@ -280,11 +315,15 @@ https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b
 
 		#Now we start hitting the content page
 		data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
-		if self.extractor_object.case_number != '':
+
+		#Extract the pacer_case_id in case the extractor types are REFRESH_CASE or PACER_IMPORT_CASE
+		#The DATE_RANGE extraction does not need the pacer_case_id since it is not associated
+		#With any single case
+		if self.extractor_type_obj.extractor_type == 'REFRESH_CASE' or self.extractor_type_obj.extractor_type == 'PACER_IMPORT_CASE':
 			pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
-		else:
+		elif self.extractor_type_obj.extractor_type == 'DATE_RANGE':
 			pacer_case_id = ''
-			
+
 		#The parameters to be encoded and sent as a search criteria
 		query_parameters = {
 			'UserType': self.extractor_object.user_type,
@@ -366,7 +405,7 @@ https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b
 
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
-		case_number = case_number_matched.group(0)	
+		case_number = case_number_matched.group(0)
 		pacer_case_id = 0
 
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
@@ -442,7 +481,6 @@ https://github.com/gaurav-uc/pacer-training/blob/0e1247d0c883e22d614900abcbc1b3b
 	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
 		case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
 		case_file_object.write(page_contents)
-
 		return file_name
 
 	def logout(self):
@@ -533,10 +571,23 @@ class Parser():
 		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
 		case_number = case_details[0]
 
+		#Check for special cases where the text 'All Defendants are missing'
+		if len(case_number) > 25:
+			parties_involved = re.sub(r'(?P<upto_five_digits>^\d{1}:\d{2}\-[a-z]{2}\-\d{5})\-([A-Z]{3}\-?)*(?P<last_digit>\d{1})?', "", case_number)
+			case_number = re.sub(parties_involved, "", case_number)
+		else:
+			parties_involved = case_details[1]
+		case_number = case_number.strip(r'\s*|\n')
+
 		#Remove the last four character like -RJA
-		case_number_matched = re.match(r'^\d:\d+\-[a-z]+\-\d{5}', case_number)
-		case_number = case_number_matched.group(0)
-		parties_involved = case_details[1]
+		case_number_matched = re.match(r'(?P<upto_five_digits>^\d{1}:\d{2}\-[a-z]{2}\-\d{5})\-([A-Z]{3}\-?)*(?P<last_digit>\d{1})?', case_number)
+		if case_number_matched:
+			case_number_group_dict = case_number_matched.groupdict()
+			if case_number_group_dict['last_digit']:
+				case_number = str(case_number_group_dict['upto_five_digits']) + '-' + str(case_number_group_dict['last_digit'])
+			else:
+				case_number = str(case_number_group_dict['upto_five_digits'])
+
 		case_filed_date = case_details[2]
 
 		#Validate for cases without close date

@@ -6,7 +6,6 @@ class Scraper():
 		self.downloader_obj = pacer_scraper.Downloader()
 		self.parser_obj = pacer_scraper.Parser()
 		self.extractor_obj = pacer_scraper.Extractor()
-
 		self.extractor_type = ''
 
 	def set_extractor_type(self):
@@ -36,6 +35,7 @@ class Scraper():
 
 		#Set the extractor type
 		if self.extractor_type == "DATE_RANGE":
+			
 			# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 			file_names_list = self.downloader_obj.save_all_case_details_page(case_details_page_contents)
 
