@@ -48,7 +48,8 @@ class Extractor():
 	"""
 		Class holds the search criteria used to query the case details.
 		Member functions:
-				1. save_search_criteria(self)
+				1. set_extractor_type(self)
+				2. save_search_criteria(self)
 		Inherits:
 				None
 	"""
@@ -111,6 +112,16 @@ class Extractor():
 		self.middle_name = middle_name if first_name != '' else ''
 		self.type = type
 		self.exact_matches_only = 0
+
+	def set_extractor_type(self):
+		if self.extractor_type_id == 1:
+			self.extractor_type = "DATE_RANGE"
+		elif self.extractor_type_id == 2:
+			self.extractor_type = "REFRESH_CASE"
+		elif self.extractor_type_id == 3:
+			self.extractor_type = "PACER_IMPORT_CASE"
+		print "The extractor type is:\t", self.extractor_type
+		return self.extractor_type
 
 	def save_search_criteria(self):
 		"""
@@ -582,6 +593,7 @@ class Parser():
 		case_number_matched = re.match(r'(?P<upto_five_digits>^\d{1}:\d{2}\-[a-z]{2}\-\d{5})\-([A-Z]{3}\-?)*(?P<last_digit>\d{1})?', case_number)
 		if case_number_matched:
 			case_number_group_dict = case_number_matched.groupdict()
+
 			if case_number_group_dict['last_digit']:
 				case_number = str(case_number_group_dict['upto_five_digits']) + '-' + str(case_number_group_dict['last_digit'])
 			else:
