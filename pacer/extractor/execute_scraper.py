@@ -27,7 +27,7 @@ class Scraper():
 		#Set the extractor type
 		while True:
 			if self.extractor_type == "DATE_RANGE":
-				print "Extractor Type:\tDATE_RANGE"
+				print "DATE_RANGE"
 
 				# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 				#Save the HTML file containing all the case details
@@ -39,14 +39,14 @@ class Scraper():
 				continue
 
 			elif self.extractor_type == "PARSE_FILE":
-				print "Extractor Type:\tPARSE_FILE"
+				print "PARSE_FILE"
 				case_details_list = self.parser_object.get_metadata_page()
 				self.parser_object.save_metadata_page_contents(case_details_list)
 				self.extractor_type = "REFRESH_CASE"
 				continue
 
 			elif self.extractor_type == "REFRESH_CASE":
-				print "Extractor Type:\tREFRESH_CASE"
+				print "REFRESH_CASE"
 				if self.extractor_object.case_number == '':
 					self.downloader_object.save_indivisual_cases(case_details_page_contents)
 				elif self.extractor_object.case_number != '':
@@ -54,7 +54,7 @@ class Scraper():
 				break
 
 			elif self.extractor_type == "PACER_IMPORT_CASE":
-				print "Extractor Type:\tPACER_IMPORT_CASE"
+				print "PACER_IMPORT_CASE"
 
 				is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
 

@@ -120,7 +120,6 @@ class Extractor():
 			self.extractor_type = "REFRESH_CASE"
 		elif self.extractor_type_id == 3:
 			self.extractor_type = "PACER_IMPORT_CASE"
-		print "The extractor type is:\t", self.extractor_type
 		return self.extractor_type
 
 	def save_search_criteria(self):
@@ -354,7 +353,6 @@ class Downloader():
 		query_request = urllib2.Request(data_page_url, query_parameters_encoded)
 		query_response = self.opener.open(query_request)
 		case_details_page_contents = query_response.read()
-		print "Made the query as per the details in the Extractor"
 		return case_details_page_contents
 
 	def save_all_case_details_page(self, case_details_page_contents):
@@ -386,29 +384,6 @@ class Downloader():
 		self.connection_cursor.execute(path_insert_query, ( is_parsed, page_path + '/' + file_name,))
 		self.database_connection.commit()
 
-		#Collect all the links
-		# case_details_soup = BeautifulSoup(case_details_page_contents, 'html.parser')
-		# case_links = case_details_soup.find_all('a', class_='')
-		# for case_link in case_links:
-		# 	if case_link:
-		# 		case_links_list.append(case_link['href'])
-		# 		case_number_list.append(case_link.text)
-		# 	else:
-		# 		pass
-
-		#open each link and save each page
-		# for case_link in case_links_list:
-		# 	case_details_page_response = self.opener.open( case_details_base_link + case_link )
-		# 	case_number = case_number_list[case_count].replace(':', '').replace('-', '_')
-		# 	file_name = case_number + '.html'
-		# 	file_names_list.append(file_name)
-		# 	case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
-		# 	case_file_object.write(case_details_page_response.read())
-		# 	case_count += 1
-		# 	case_file_object.close()
-		print "Saved the files of all the case details"
-		# return file_names_list
-
 	def get_page_based_on_case_number(self, case_number):
 		"""
 			Used if the extractor type is REFRESH_CASE, to save the page containing Docket.
@@ -416,11 +391,14 @@ class Downloader():
 					self, case_number
 		"""
 
+		pacer_case_id = 0
+		DEFAULT = 2
+		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		additional_info_json = {}
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 
 		case_number = case_number_matched.group(0)
-		pacer_case_id = 0
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
@@ -479,16 +457,33 @@ class Downloader():
 		self.connection_cursor.execute("""SELECT page_value_json FROM courtcase_source_data_path WHERE courtcase_id LIKE (%s)""", (courtcase_id,))
 		page_value_json = self.connection_cursor.fetchone()[0]
 		page_value_json = json.loads(page_value_json)
+		save_additional_info_page_path = page_value_json['CASE']
 		page_value_json['DOCKET'] = save_docket_page_path
 		page_value_json = json.dumps(page_value_json)
 		courtcase_source_data_path_update_query = """UPDATE courtcase_source_data_path SET page_value_json = %s WHERE courtcase_id = %s"""
 		self.connection_cursor.execute(courtcase_source_data_path_update_query, (page_value_json, courtcase_id,))
 
 		#Change METADATA TO DEFAULT
+		courtcase_source_value = DEFAULT
 		courtcase_update_query = """UPDATE courtcase SET courtcase_source_value = %s WHERE pacer_case_id = %s"""
-		self.connection_cursor.execute(courtcase_update_query, (2, pacer_case_id,))
+		self.connection_cursor.execute(courtcase_update_query, (courtcase_source_value, pacer_case_id,))
 		self.database_connection.commit()
-		print "Refeshed the case ", case_number
+
+		#Save contents into the addional_info table
+		courtcase_details_file_object = open(save_additional_info_page_path, 'r')
+		additionol_info_page_contnets_soup = BeautifulSoup(courtcase_details_file_object.read(), 'html.parser')
+		additional_info_links = additionol_info_page_contnets_soup.find_all('a', class_='')
+		for additional_info in additional_info_links:
+			additional_info_name = additional_info.text
+			additional_info_link = additional_info_base_url + additional_info['href']
+			additional_info_json[additional_info_name] = additional_info_link
+		additional_info_json = json.dumps(additional_info_json)
+		self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id ,))
+		courtcase_id =  self.connection_cursor.fetchall()[0]
+		additional_info_insert_query = """INSERT INTO additional_info(courtcase_id, additional_info_json)
+									VALUES(%s, %s)"""
+		self.connection_cursor.execute(additional_info_insert_query, (courtcase_id, additional_info_json,))
+		self.database_connection.commit()
 
 	def save_import_case(self, page_contents, case_number):
 	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
@@ -684,7 +679,7 @@ class Parser():
 
 	def save_case_details(self, case_details_tuple, file_name):
 		"""
-			Save the parsed case details
+			Save the parsed case details for PACER_IMPORT_CASE
 			Arguments:
 					self, case_details_tuple, file_name
 		"""
@@ -714,45 +709,35 @@ class Parser():
 										  (pacer_case_id,))
 		existing_pacer_case_id = self.connection_cursor.fetchone()
 
-		#Check if existing pacer_case_id matches with the pacer_case_id of the case in hand
-		if existing_pacer_case_id:
-			is_equal_pacer_case_id = True
-		else:
-			is_equal_pacer_case_id = False
+		self.connection_cursor.execute("SELECT id from download_tracker ORDER BY id DESC LIMIT 1")
+		download_tracker_id = self.connection_cursor.fetchall()
+		courtcase_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
+									   parties_involved, case_filed_date, case_closed_date)
+									   VALUES(%s, %s, %s, %s, %s, %s, %s)"""
+		courtcase_source_value = METADATA
+		self.connection_cursor.execute(courtcase_insert_query,
+								(download_tracker_id, courtcase_source_value, pacer_case_id,
+								case_number, parties_involved,
+								case_filed_date, case_closed_date,))
+		self.database_connection.commit()
 
-		#Inset case details that are not already existing
-		if not is_equal_pacer_case_id:
-			self.connection_cursor.execute("SELECT id from download_tracker ORDER BY id DESC LIMIT 1")
-			download_tracker_id = self.connection_cursor.fetchall()
-			courtcase_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
-										   parties_involved, case_filed_date, case_closed_date)
-										   VALUES(%s, %s, %s, %s, %s, %s, %s)"""
-			courtcase_source_value = METADATA
-			self.connection_cursor.execute(courtcase_insert_query,
-									(download_tracker_id, courtcase_source_value, pacer_case_id,
-									case_number, parties_involved,
-									case_filed_date, case_closed_date,))
-			self.database_connection.commit()
+		#Save contents into the addional_info table
+		self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
+		courtcase_id =  self.connection_cursor.fetchall()
+		additional_info_insert_query = """INSERT INTO additional_info(courtcase_id, additional_info_json)
+									VALUES(%s, %s)"""
+		self.connection_cursor.execute(additional_info_insert_query, (courtcase_id, additional_info_json,))
+		self.database_connection.commit()
 
-			#Save contents into the addional_info table
-			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
-			courtcase_id =  self.connection_cursor.fetchall()
-			additional_info_insert_query = """INSERT INTO additional_info(courtcase_id, additional_info_json)
-										VALUES(%s, %s)"""
-			self.connection_cursor.execute(additional_info_insert_query, (courtcase_id, additional_info_json,))
-			self.database_connection.commit()
-
-			#Save into the courtcase_source_data_path table
-			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name
-			page_value_json = json.dumps(page_value_json)
-			self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
-			courtcase_id =  self.connection_cursor.fetchall()
-			courtcase_source_data_path_insert_query = """INSERT INTO courtcase_source_data_path(courtcase_id, page_value_json)
-										VALUES(%s, %s)"""
-			self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
-			self.database_connection.commit()
-		else:
-			pass
+		#Save into the courtcase_source_data_path table
+		page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name
+		page_value_json = json.dumps(page_value_json)
+		self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
+		courtcase_id =  self.connection_cursor.fetchall()
+		courtcase_source_data_path_insert_query = """INSERT INTO courtcase_source_data_path(courtcase_id, page_value_json)
+									VALUES(%s, %s)"""
+		self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
+		self.database_connection.commit()
 
 	def get_metadata_page(self):
 		case_details_list = []
