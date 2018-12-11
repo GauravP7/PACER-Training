@@ -10,14 +10,15 @@
 from django.db import models
 
 class ExtractorType(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     extractor_type_value = models.CharField(max_length=165, blank=True)
     class Meta:
         db_table = u'extractor_type'
 
 class Extractor(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     extractor_type = models.ForeignKey(ExtractorType, null=True, blank=True)
+    is_local_parsing = models.IntegerField(null=True, blank=True)
     case_number = models.CharField(max_length=165, blank=True)
     case_status = models.CharField(max_length=165, blank=True)
     from_field_date = models.DateField(null=True, blank=True)
@@ -36,12 +37,14 @@ class Extractor(models.Model):
 
 class DownloadTracker(models.Model):
     id = models.AutoField(primary_key=True)
+    is_parsed = models.IntegerField(null=True, blank=True)
     page_path = models.CharField(max_length=330, blank=True)
     class Meta:
         db_table = u'download_tracker'
 
+
 class CourtcaseSource(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     value = models.CharField(max_length=165, blank=True)
     class Meta:
         db_table = u'courtcase_source'
@@ -58,17 +61,17 @@ class Courtcase(models.Model):
     class Meta:
         db_table = u'courtcase'
 
-class AdditionalInfo(models.Model):
-    id = models.AutoField(primary_key=True)
-    courtcase = models.ForeignKey(Courtcase, null=True, blank=True)
-    additional_info_json = models.TextField(blank=True)
-    class Meta:
-        db_table = u'additional_info'
-
 class CourtcaseSourceDataPath(models.Model):
     id = models.AutoField(primary_key=True)
     courtcase = models.ForeignKey(Courtcase, null=True, blank=True)
     page_value_json = models.TextField(blank=True)
     class Meta:
         db_table = u'courtcase_source_data_path'
+
+class AdditionalInfo(models.Model):
+    id = models.AutoField(primary_key=True)
+    courtcase = models.ForeignKey(Courtcase, null=True, blank=True)
+    additional_info_json = models.TextField(blank=True)
+    class Meta:
+        db_table = u'additional_info'
 

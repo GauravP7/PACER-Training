@@ -2,7 +2,6 @@ CREATE DATABASE `pacer_case_details` CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 USE `pacer_case_details`;
 
-
 CREATE TABLE IF NOT EXISTS `extractor_type` (
 	`id` INT NOT NULL AUTO_INCREMENT,
 	`extractor_type_value` VARCHAR(55),
@@ -11,12 +10,13 @@ CREATE TABLE IF NOT EXISTS `extractor_type` (
 
 INSERT INTO extractor_type(extractor_type_value) VALUES('DATE_RANGE');
 INSERT INTO extractor_type(extractor_type_value) VALUES('REFRESH_CASE');
-INSERT INTO extractor_type(extractor_type_value) VALUES('IMPORT_CASE');
+INSERT INTO extractor_type(extractor_type_value) VALUES('PACER_IMPORT_CASE');
 INSERT INTO extractor_type(extractor_type_value) VALUES('PARSE_FILE');
 
 CREATE TABLE IF NOT EXISTS `extractor` (
 	`id` INT NOT NULL AUTO_INCREMENT,
 	`extractor_type_id` INT,
+	`is_local_parsing` TINYINT(1),
 	`case_number`  VARCHAR(55),
 	`case_status`  VARCHAR(55),
 	`from_field_date`  DATE,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 	`type`  VARCHAR(55),
 	`exact_matches_only`  TINYINT(1),
   PRIMARY KEY (`id`),
-	FOREIGN KEY (`extractor_type_id`) REFERENCES extractor_type(`id`)
+	FOREIGN KEY (`extractor_type_id`) REFERENCES extractor_type(`id`) ON DELETE CASCADE
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `download_tracker` (
@@ -60,16 +60,16 @@ CREATE TABLE IF NOT EXISTS  `courtcase` (
 	`case_filed_date` DATE,
 	`case_closed_date` DATE,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`),
+  FOREIGN KEY (`download_tracker_id`) REFERENCES download_tracker(`id`) ON DELETE CASCADE,
 	UNIQUE KEY courtcase_key (case_number, pacer_case_id),
-	FOREIGN KEY (`courtcase_source_value`) REFERENCES courtcase_source(`id`)
+	FOREIGN KEY (`courtcase_source_value`) REFERENCES courtcase_source(`id`) ON DELETE CASCADE
 ) ENGINE=INNODB;
 
 CREATE TABLE IF NOT EXISTS  `courtcase_source_data_path` (
 	`id` INT NOT NULL AUTO_INCREMENT,
 	`courtcase_id` INT,
 	`page_value_json`  TEXT,
-  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`),
+  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`) ON DELETE CASCADE,
   PRIMARY KEY (`id`)
 ) ENGINE=INNODB;
 
@@ -78,5 +78,5 @@ CREATE TABLE IF NOT EXISTS  `additional_info` (
 	`courtcase_id` INT,
 	`additional_info_json` TEXT,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`)
+  FOREIGN KEY (`courtcase_id`) REFERENCES courtcase(`id`) ON DELETE CASCADE
 ) ENGINE=INNODB;

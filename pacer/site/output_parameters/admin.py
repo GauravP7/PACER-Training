@@ -6,7 +6,7 @@ from output_parameters.models import CourtcaseSourceDataPath
 from django.contrib import admin
 
 class DownloadTrackerDisplay(admin.ModelAdmin):
-    list_display = ('id', 'page_path',)
+    list_display = ('id', 'is_parsed', 'page_path',)
 
 class CourtcaseDisplay(admin.ModelAdmin):
     list_display = ('id', 'get_courtcase_source_value', 'pacer_case_id', 'case_number', 'parties_involved', 'case_filed_date', 'case_closed_date',)

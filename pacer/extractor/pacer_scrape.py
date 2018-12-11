@@ -49,7 +49,6 @@ class Extractor():
 		Class holds the search criteria used to query the case details.
 		Member functions:
 				1. set_extractor_type(self)
-				2. save_search_criteria(self)
 		Inherits:
 				None
 	"""
@@ -67,12 +66,13 @@ class Extractor():
 						      password="Code@mispl",
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
-		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
+		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1") #ORDER BY id DESC LIMIT
 
 		#Unpack tuples for extractor fields
 		extractor_search_criteria = self.connection_cursor.fetchall()
 		(id,
 		extractor_type_id,
+		is_local_parsing,
 		case_number,
 		case_status,
 		from_filed_date,
@@ -94,6 +94,7 @@ class Extractor():
 			to_filed_date = split_to_filed_date[1] + '/' +  split_to_filed_date[2] + '/' + split_to_filed_date[0]
 
 		self.extractor_type_id = extractor_type_id
+		self.is_local_parsing = is_local_parsing
 
 		#Initialize the search criteria
 		self.user_type = ''
@@ -122,38 +123,6 @@ class Extractor():
 			self.extractor_type = "PACER_IMPORT_CASE"
 		return self.extractor_type
 
-	def save_search_criteria(self):
-		"""
-			Used to save the different search criteria used for querying courtcase.
-			Arguments:
-					self
-		"""
-
-		from_filed_date = self.from_filed_dateself.extractor_type if self.from_filed_date != '' else None
-		to_filed_date = self.to_filed_date if self.to_filed_date != '' else None
-		from_last_entry_date = self.from_last_entry_date if self.from_last_entry_date != '' else None
-		to_last_entry_date = self.to_last_entry_date if self.to_last_entry_date != '' else None
-
-		#Split the date to save in dd/mm/yyyy format
-		#Since MySQL accepts only this format
-		#It fails to save the date if it is in any other format
-		split_from_filed_date = self.from_filed_date.split('-')
-		from_filed_date = split_from_filed_date[2] + '/' + split_from_filed_date[0] + '/' +split_from_filed_date[1]
-		split_to_filed_date = self.to_filed_date.split('-')
-		to_filed_date = split_to_filed_date[2] + '/' + split_to_filed_date[0] + '/' +split_to_filed_date[1]
-
-		#Insert the case details into the database
-		extractor_insert_query = """INSERT INTO extractor(case_number, case_status, from_field_date,
-			to_field_date, from_last_entry_date, to_last_entry_date, nature_of_suit, cause_of_action,
-			last_name, first_name, middle_name, type, exact_matches_only)
-			VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-		self.connection_cursor.execute(extractor_insert_query, (self.case_number, self.case_status,
-							from_filed_date , to_filed_date, from_last_entry_date, to_last_entry_date,
-							self.nature_of_suit, self.cause_of_action,
-							self.last_name, self.first_name, self.middle_name,
-							self.type, self.exact_matches_only,))
-		self.database_connection.commit()
-
 	def __del__(self):
 		"""
 			Destructor
@@ -174,9 +143,11 @@ class Downloader():
 				 5. get_case_details_page_contents(self)
 				 6. save_all_case_details_page(self, case_details_page_contents)
 				 7. get_page_based_on_case_number(self, case_number)
-				 8. import_case_new(self, case_number)
-				 9. logout(self)
-				10. terminate_with_error_message(self)
+				 8. save_import_case(self, page_contents, case_number)
+				 9. save_indivisual_cases(self, case_details_page_contents)
+				10. pacer_case_id_exists(self, case_number)
+				11. logout(self)
+				12. terminate_with_error_message(self)
 		Inherits:self.extractor_type
 				None
 	"""
@@ -186,9 +157,11 @@ class Downloader():
 			Default constructor
 			Tasks:
 			 1. sets up the opener
-			 2. Initializes login credentials
-			 3. Initializes cookie
-			 4. Sets up the database connection and cursor
+			 2. Initializes cookie
+			 3. Initializes login credentials
+			 4. Instantiates the required classes
+			 5. Initializes the extractor_type based on input from extractor
+			 6. Sets up the database connection and cursor
 		"""
 
 		#Initialize the opener
@@ -398,6 +371,11 @@ class Downloader():
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 
+		#Set the autocommit to true in order to refesh the database,
+		#Otherwise the database will fail to fetch the courtcase_id for
+		#The newly imported case
+		self.database_connection.autocommit(True)
+
 		case_number = case_number_matched.group(0)
 		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
@@ -450,8 +428,9 @@ class Downloader():
 		docket_page.close()
 
 		#Update the JSON in the courtcase_source_data_path
-		self.connection_cursor.execute("""SELECT id FROM courtcase WHERE case_number = %s""", (case_number,))
+		self.connection_cursor.execute("""SELECT id FROM courtcase WHERE case_number LIKE (%s)""", (case_number,))
 		courtcase_id = self.connection_cursor.fetchone()[0]
+		self.database_connection.autocommit(False)
 
 		#Append the path of saved Docket file
 		self.connection_cursor.execute("""SELECT page_value_json FROM courtcase_source_data_path WHERE courtcase_id LIKE (%s)""", (courtcase_id,))
@@ -486,12 +465,27 @@ class Downloader():
 		self.database_connection.commit()
 
 	def save_import_case(self, page_contents, case_number):
+		"""
+			Used if the extractor type is PACER_IMPORT_CASE, to save the new page.
+			Arguments:
+					self, page_contents, case_number
+			Returns:
+					file_name
+		"""
+
+		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
+		case_number = case_number_matched.group(0)
 	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
 		case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
 		case_file_object.write(page_contents)
 		return file_name
 
 	def save_indivisual_cases(self, case_details_page_contents):
+		"""
+			Used to save the HTML of individual cases.
+			Arguments:
+					self, case_details_page_contents
+		"""
 
 		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
 		case_links_list = []
@@ -513,8 +507,15 @@ class Downloader():
 		for case_link in case_links_list:
 			case_details_page_response = self.opener.open( case_details_base_link + case_link )
 			pacer_case_id = case_link[-5:]
-			case_number = case_number_list[case_count].replace(':', '').replace('-', '_')
-			file_name = case_number + '.html'
+			case_number = case_number_list[case_count].strip(r'\s*|\n')
+			case_number = re.sub(r'[A-Z]{3}\-?', "", case_number).replace(':', '').replace('-', '_')
+			if case_number[-1:] != '_':
+		 		file_name = case_number + '.html'
+			else:
+				#Remove the - form the end
+				case_number = case_number[:-1]
+		 		file_name = case_number + '.html'
+
 			case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
 			case_file_object.write(case_details_page_response.read())
 			case_count += 1
@@ -533,6 +534,15 @@ class Downloader():
 			page_value_json = {}
 
 	def pacer_case_id_exists(self, case_number):
+		"""
+			Used to check if the pacer_case_id exists for a given case_number.
+			Arguments:
+					self, case_number
+			Returns:
+					True - if pacer_case_id exists,
+					False - otherwise.
+		"""
+
 		pacser_case_id = self.find_case_object.get_pacer_case_id(case_number, self.opener)
 		self.connection_cursor.execute("""SELECT pacer_case_id from courtcase WHERE case_number = %s""", (case_number, ))
 		existing_pacer_case_id = self.connection_cursor.fetchone()
@@ -571,6 +581,7 @@ class Downloader():
 			Tasks:
 				1. Close the database connection
 		"""
+
 		self.database_connection.close()
 
 class Parser():
@@ -580,6 +591,8 @@ class Parser():
 				1. display_page_cost(self, case_details_page_contents)
 				2. parse_case_details_page(self, file_name)
 				3. save_case_details(self,  case_details_tuple, file_name)
+				4. get_metadata_page(self)
+				5. save_metadata_page_contents(self, case_details_list)
 		Inherits:
 				None
 	"""
@@ -740,10 +753,18 @@ class Parser():
 		self.database_connection.commit()
 
 	def get_metadata_page(self):
+		"""
+			Used when the extractor type is PARSE_FILE.
+			Parses the HTML file containing the search results.
+			Returns:
+					case_details_list - contains tuples of indivisual cases
+		"""
+
 		case_details_list = []
 		metadata_page_query = "SELECT is_parsed FROM download_tracker ORDER BY id DESC LIMIT 1"
 		self.connection_cursor.execute(metadata_page_query)
 		is_parsed = self.connection_cursor.fetchone()
+
 		if is_parsed[0] == 0:
 			#Parse the page and Insert into the DB
 			metadata_page_query = "SELECT page_path FROM download_tracker ORDER BY id DESC LIMIT 1"
@@ -751,7 +772,6 @@ class Parser():
 			page_path = self.connection_cursor.fetchone()
 			metadata_file_name = page_path[0]
 			metadata_page_file_object = open(metadata_file_name, 'r')
-			print "file " + metadata_file_name + " is opened for parsing"
 
 			#Parse the file containing the search results
 			metadata_file_soup = BeautifulSoup(metadata_page_file_object, 'html.parser')
@@ -783,17 +803,23 @@ class Parser():
 
 					case_details_tuple = (case_number, pacer_case_id, parties_involved, case_filed_date, case_closed_date)
 					case_details_list.append(case_details_tuple)
-
 				else:
 					continue
 			is_parsed_update_query = """UPDATE download_tracker SET is_parsed = %s WHERE page_path = %s"""
 			self.connection_cursor.execute(is_parsed_update_query, (1, metadata_file_name,))
 			self.database_connection.commit()
+			return case_details_list
 		else:
-			pass
-		return case_details_list
+			print "The file is already parsed"
+			return None
 
 	def save_metadata_page_contents(self, case_details_list):
+		"""
+			Used to save the case details form the Search results file.
+			Arguments:
+					case_details_list
+		"""
+
 		METADATA = 1
 		courtcase_source_value = METADATA
 		case_details_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
@@ -826,10 +852,17 @@ class Parser():
 											case_filed_date, case_closed_date,))
 				self.database_connection.commit()
 
+	def fetch_local_parse_filename(self, case_number):
+		file_find_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case'
+		case_number = case_number.replace(':', '').replace('-', '_')
+		file_to_parse = case_number + '.html'
+		return file_to_parse
+
 	def __del__(self):
 		"""
 			Destructor
 			Tasks:
 				1. Close the database connection
 		"""
+
 		self.database_connection.close()

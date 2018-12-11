@@ -27,7 +27,6 @@ class Scraper():
 		#Set the extractor type
 		while True:
 			if self.extractor_type == "DATE_RANGE":
-				print "DATE_RANGE"
 
 				# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
 				#Save the HTML file containing all the case details
@@ -39,14 +38,14 @@ class Scraper():
 				continue
 
 			elif self.extractor_type == "PARSE_FILE":
-				print "PARSE_FILE"
 				case_details_list = self.parser_object.get_metadata_page()
+				if case_details_list == None:
+					break
 				self.parser_object.save_metadata_page_contents(case_details_list)
 				self.extractor_type = "REFRESH_CASE"
 				continue
 
 			elif self.extractor_type == "REFRESH_CASE":
-				print "REFRESH_CASE"
 				if self.extractor_object.case_number == '':
 					self.downloader_object.save_indivisual_cases(case_details_page_contents)
 				elif self.extractor_object.case_number != '':
@@ -54,23 +53,29 @@ class Scraper():
 				break
 
 			elif self.extractor_type == "PACER_IMPORT_CASE":
-				print "PACER_IMPORT_CASE"
-
-				is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
-
-				if not is_exists_pacer_case_id:
-					print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
-
-					# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
-					new_case_file_name = self.downloader_object.save_import_case(case_details_page_contents, self.extractor_object.case_number)
+				if self.extractor_object.is_local_parsing:
+					file_to_parse = self.parser_object.fetch_local_parse_filename(self.extractor_object.case_number)
 
 					# [ Step 7 of 8 ] : Save the case details.
-					case_details_tuple = self.parser_object.parse_case_details_page(new_case_file_name)
-					self.parser_object.save_case_details(case_details_tuple, new_case_file_name)
+					case_details_tuple = self.parser_object.parse_case_details_page(file_to_parse)
+					self.parser_object.save_case_details(case_details_tuple, file_to_parse)
 				else:
-					#REFRESH_CASE if the case already exists
-					self.extractor_type = "REFRESH_CASE"
-					continue
+					is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
+
+					if not is_exists_pacer_case_id:
+						print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
+
+						# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
+						new_case_file_name = self.downloader_object.save_import_case(case_details_page_contents, self.extractor_object.case_number)
+
+						# [ Step 7 of 8 ] : Save the case details.
+						case_details_tuple = self.parser_object.parse_case_details_page(new_case_file_name)
+						self.parser_object.save_case_details(case_details_tuple, new_case_file_name)
+						self.extractor_type = "REFRESH_CASE"
+						continue
+					else:
+						#REFRESH_CASE if the case already exists
+						self.extractor_type = "REFRESH_CASE"
 				break
 
 		# [ Step 8 of 8 ] : Logout from the website.
