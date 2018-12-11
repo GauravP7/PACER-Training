@@ -73,6 +73,7 @@ class Extractor():
 		(id,
 		extractor_type_id,
 		is_local_parsing,
+		input_pacer_case_id,
 		case_number,
 		case_status,
 		from_filed_date,
@@ -95,6 +96,7 @@ class Extractor():
 
 		self.extractor_type_id = extractor_type_id
 		self.is_local_parsing = is_local_parsing
+		self.pacer_case_id = input_pacer_case_id
 
 		#Initialize the search criteria
 		self.user_type = ''
@@ -140,7 +142,7 @@ class Downloader():
 				 2. login_pacer(self)
 				 3. set_cookie_value(self, login_page_contents)
 				 4. validate_login_success(self, login_page_contents)
-				 5. get_case_details_page_contents(self)
+				 5. get_case_details_page_contents(self)pacer_case_id
 				 6. save_all_case_details_page(self, case_details_page_contents)
 				 7. get_page_based_on_case_number(self, case_number)
 				 8. save_import_case(self, page_contents, case_number)
@@ -552,6 +554,10 @@ class Downloader():
 		else:
 			return False
 
+	def find_pacer_case_id(self):
+		pacser_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
+		return pacser_case_id
+
 	def logout(self):
 		"""
 			Logout from the website
@@ -601,8 +607,11 @@ class Parser():
 		"""
 			Default constructor
 			Tasks:
-			 1. Setting up the database connection and cursor
+			 1. Creating the Extractor Object
+			 2. Setting up the database connection and cursor
 		"""
+
+		self.extractor_object = Extractor()
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -682,7 +691,10 @@ class Parser():
 		additional_info_json = json.dumps(additional_info_json)
 
 		#Parse the pacer_case_id
-		pacer_case_id = additional_info_link[-5:]
+		if self.extractor_object.is_local_parsing:
+			pacer_case_id = self.extractor_object.pacer_case_id
+		else:
+			pacer_case_id = case_link[-5:]
 
 		#Perform tuple packing
 		required_case_details = (case_number, parties_involved,
@@ -857,6 +869,37 @@ class Parser():
 		case_number = case_number.replace(':', '').replace('-', '_')
 		file_to_parse = case_number + '.html'
 		return file_to_parse
+
+	def parse_local_docket_page(self, file_to_parse):
+		DEFAULT = 2
+		pacer_case_id = self.extractor_object.pacer_case_id
+		self.database_connection.autocommit(False)
+		file_find_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case'
+		docket_file = file_to_parse.strip('.hmtl') + '_docket' + '.html'
+		save_docket_page_path = file_find_path + '/' + docket_file
+		docket_file_object = open(save_docket_page_path, 'r')
+
+		#Update the JSON in the courtcase_source_data_path
+		self.connection_cursor.execute("""SELECT id FROM courtcase WHERE pacer_case_id = %s""", (pacer_case_id,))
+		courtcase_id = self.connection_cursor.fetchone()[0]
+		self.database_connection.autocommit(False)
+
+		#Append the path of saved Docket file
+		self.connection_cursor.execute("""SELECT page_value_json FROM courtcase_source_data_path WHERE courtcase_id LIKE (%s)""", (courtcase_id,))
+		page_value_json = self.connection_cursor.fetchone()[0]
+		page_value_json = json.loads(page_value_json)
+		save_additional_info_page_path = page_value_json['CASE']
+		page_value_json['DOCKET'] = save_docket_page_path
+		page_value_json = json.dumps(page_value_json)
+		courtcase_source_data_path_update_query = """UPDATE courtcase_source_data_path SET page_value_json = %s WHERE courtcase_id = %s"""
+		self.connection_cursor.execute(courtcase_source_data_path_update_query, (page_value_json, courtcase_id,))
+
+		#Change METADATA TO DEFAULT
+		courtcase_source_value = DEFAULT
+		courtcase_update_query = """UPDATE courtcase SET courtcase_source_value = %s WHERE pacer_case_id = %s"""
+		self.connection_cursor.execute(courtcase_update_query, (courtcase_source_value, pacer_case_id,))
+		self.database_connection.commit()
+
 
 	def __del__(self):
 		"""

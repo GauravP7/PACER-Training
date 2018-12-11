@@ -1,4 +1,5 @@
 import pacer_scrape as pacer_scraper
+import find_case as find_case_object
 import find_case
 
 class Scraper():
@@ -12,17 +13,18 @@ class Scraper():
 
 	def run(self):
 
-		# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
-		login_page_contents = self.downloader_object.login_pacer()
+		if not self.extractor_object.is_local_parsing:
+			# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
+			login_page_contents = self.downloader_object.login_pacer()
 
-		# [ Step 2 of 8 ] : Validate the Login.
-		self.downloader_object.validate_login_success(login_page_contents)
+			# [ Step 2 of 8 ] : Validate the Login.
+			self.downloader_object.validate_login_success(login_page_contents)
 
-		# [ Step 3 of 8 ] : Parse the contents and get cookie.
-		self.downloader_object.set_cookie_value(login_page_contents)
+			# [ Step 3 of 8 ] : Parse the contents and get cookie.
+			self.downloader_object.set_cookie_value(login_page_contents)
 
-		# [ Step 4 of 8 ] : Query as per the input criteria.
-		case_details_page_contents = self.downloader_object.get_case_details_page_contents()
+			# [ Step 4 of 8 ] : Query as per the input criteria.
+			case_details_page_contents = self.downloader_object.get_case_details_page_contents()
 
 		#Set the extractor type
 		while True:
@@ -45,6 +47,10 @@ class Scraper():
 				self.extractor_type = "REFRESH_CASE"
 				continue
 
+			elif self.extractor_type == "FIND_CASE":
+				pacer_case_id = downloader_object.find_pacer_case_id()
+				print "The PACER case ID is:\t", pacer_case_id
+
 			elif self.extractor_type == "REFRESH_CASE":
 				if self.extractor_object.case_number == '':
 					self.downloader_object.save_indivisual_cases(case_details_page_contents)
@@ -53,12 +59,17 @@ class Scraper():
 				break
 
 			elif self.extractor_type == "PACER_IMPORT_CASE":
+
+				#check for local parsing
 				if self.extractor_object.is_local_parsing:
 					file_to_parse = self.parser_object.fetch_local_parse_filename(self.extractor_object.case_number)
 
 					# [ Step 7 of 8 ] : Save the case details.
 					case_details_tuple = self.parser_object.parse_case_details_page(file_to_parse)
 					self.parser_object.save_case_details(case_details_tuple, file_to_parse)
+					
+					#Save docket page
+					self.parser_object.parse_local_docket_page(file_to_parse)
 				else:
 					is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
 
@@ -78,9 +89,10 @@ class Scraper():
 						self.extractor_type = "REFRESH_CASE"
 				break
 
-		# [ Step 8 of 8 ] : Logout from the website.
-		self.downloader_object.logout()
+		if not self.extractor_object.is_local_parsing:
 
+			# [ Step 8 of 8 ] : Logout from the website.
+			self.downloader_object.logout()
 
 scraper_object = Scraper()
 scraper_object.run()

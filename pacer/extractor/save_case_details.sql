@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `extractor` (
 	`id` INT NOT NULL AUTO_INCREMENT,
 	`extractor_type_id` INT,
 	`is_local_parsing` TINYINT(1),
+	`pacer_case_id` VARCHAR(55),
 	`case_number`  VARCHAR(55),
 	`case_status`  VARCHAR(55),
 	`from_field_date`  DATE,
