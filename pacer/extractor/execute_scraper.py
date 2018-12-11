@@ -48,8 +48,9 @@ class Scraper():
 				continue
 
 			elif self.extractor_type == "FIND_CASE":
-				pacer_case_id = downloader_object.find_pacer_case_id()
+				pacer_case_id = self.downloader_object.find_pacer_case_id()
 				print "The PACER case ID is:\t", pacer_case_id
+				break
 
 			elif self.extractor_type == "REFRESH_CASE":
 				if self.extractor_object.case_number == '':
@@ -67,7 +68,7 @@ class Scraper():
 					# [ Step 7 of 8 ] : Save the case details.
 					case_details_tuple = self.parser_object.parse_case_details_page(file_to_parse)
 					self.parser_object.save_case_details(case_details_tuple, file_to_parse)
-					
+
 					#Save docket page
 					self.parser_object.parse_local_docket_page(file_to_parse)
 				else:

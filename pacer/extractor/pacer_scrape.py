@@ -123,6 +123,10 @@ class Extractor():
 			self.extractor_type = "REFRESH_CASE"
 		elif self.extractor_type_id == 3:
 			self.extractor_type = "PACER_IMPORT_CASE"
+		elif self.extractor_type_id == 4:
+			self.extractor_type = "PARSE_FILE"
+		elif self.extractor_type_id == 5:
+			self.extractor_type = "FIND_CASE"
 		return self.extractor_type
 
 	def __del__(self):
