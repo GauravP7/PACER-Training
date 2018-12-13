@@ -7,11 +7,11 @@ import MySQLdb
 import json
 import datetime
 import find_case
+from cookielib import CookieJar
 from bs4 import BeautifulSoup
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
 #
-
 # [ Step 2 of 9 ] : Validate the Login.
 #
 # [ Step 3 of 9 ] : Parse the contents and get cookie.
@@ -58,9 +58,19 @@ class Extractor():
 		"""
 			Default constructor
 			Tasks:
-			 1. Setting up the database connection and cursor
+			 1. Set up the CSO_LOGIN flag
+			 2. Setting up the database connection and cursor
 			 2. Initialize the search criteria, reading from the database
 		"""
+
+		#Setup the CSO login
+		self.IS_CSO_LOGIN = True
+
+		if self.IS_CSO_LOGIN == False:
+			self.courthouse_link_element = 'dcecf.psc'
+		elif self.IS_CSO_LOGIN == True:
+			self.courthouse_link_element = 'ecf-test.cacd'
+
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
 						      user="root",
@@ -137,7 +147,6 @@ class Extractor():
 				1. Close the database connection
 		"""
 
-
 		self.database_connection.close()
 
 class Downloader():
@@ -173,8 +182,9 @@ class Downloader():
 		"""
 
 		#Initialize the opener
-		self.opener = urllib2.build_opener()
-		urllib2.install_opener(self.opener)
+		self.cookie_jar = CookieJar()
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie_jar))
+		#urllib2.install_opener(self.opener)
 
 		#Initialize the cookie_value
 		self.pacer_session_cookie_value = ""
@@ -214,10 +224,48 @@ class Downloader():
 					self
 		"""
 
-		with open('/home/mis/DjangoProject/pacer/extractor/credentials.json') as credentials_json:
+		with open('/home/mis/DjangoProject/cso_login/extractor/credentials.json') as credentials_json:
 			credentials_data = json.load(credentials_json)
 			self.username = credentials_data['username']
 			self.password = credentials_data['password']
+
+	def cso_login(self):
+		self.username = 'bishwas123'
+		self.password = 'Bishw@s123'
+
+		cso_login_url = "https://train-login.uscourts.gov/csologin/login.jsf?pscCourtId=CACXDC&appurl=https%3A%2F%2Fecf-test.cacd.uscourts.gov%2Fcgi-bin%2Fshowpage.pl%3F16"
+
+		#get viewstate value
+		login_page_request = urllib2.Request(cso_login_url)
+		login_page_response = self.opener.open(login_page_request)
+		login_page_contents = login_page_response.read()
+		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
+
+		form_tag = login_page_soup.find_all('input', id='j_id1:javax.faces.ViewState:1')
+		view_state_value = form_tag[0]['value']
+
+		formdata = {
+					"javax.faces.partial.ajax": "true",
+					 "Cache-Control":"no-cache",
+					 "javax.faces.source": "loginForm:fbtnLogin",
+					 "javax.faces.partial.execute": "@all",
+					 "javax.faces.partial.render": "pscLoginPanel loginForm redactionConfirmation popupMsgId",
+					 "loginForm:fbtnLogin": "loginForm:fbtnLogin",
+					 "loginForm": "loginForm",
+					"loginForm:loginName" : "bishwas123",
+					 "loginForm:password": "Bishw@s123",
+					 "loginForm:clientCode": "",
+					 "javax.faces.ViewState": str(view_state_value),
+					 }
+
+		encoded_login_credentials = urllib.urlencode(formdata)
+		login_page_request = urllib2.Request(cso_login_url)
+		login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
+		second_page_url = "https://ecf-test.cacd.uscourts.gov/cgi-bin/showpage.pl?16"
+		second_page_request = urllib2.Request(second_page_url)
+		second_page_response = self.opener.open(second_page_request)
+		contents_to_send = second_page_response.read()
+		return contents_to_send
 
 	def login_pacer(self):
 		"""
@@ -231,7 +279,7 @@ class Downloader():
 		self.set_credentials()
 		credentials = {'login': self.username, 'key': self.password}
 		encoded_login_credentials = urllib.urlencode(credentials)
-		login_page = 'https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout'
+		login_page = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/login.pl?logout'
 		login_page_request = urllib2.Request(login_page)
 		login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
 		login_page_contents = login_page_response.read()
@@ -257,9 +305,12 @@ class Downloader():
 		self.pacer_session_cookie_value = re.split( 'PacerSession |, |;', re.findall(r'"(.*?)"', script_value)[0])[0]
 
 		#Add the required headers to the opener
-		self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
-		self.opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
-		self.opener.addheaders.append(('Cookie', self.pacer_session_cookie_value ))
+		if not self.extractor_object.IS_CSO_LOGIN:
+			self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
+			self.opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
+			self.opener.addheaders.append(('Cookie', self.pacer_session_cookie_value ))
+		else:
+			self.opener.addheaders.append(('Referer', 'https://ecf-test.cacd.uscourts.gov/cgi-bin/iquery.pl'))
 
 	def validate_login_success(self, login_page_contents):
 		"""
@@ -271,10 +322,10 @@ class Downloader():
 		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 		login_page_h3_tags = login_page_soup.find_all('h3')
 		for h3_tag in login_page_h3_tags:
-			if "U.S. DISTRICT COURT" in str(h3_tag):
+			if "U.S. DISTRICT COURT" in str(h3_tag) or "Official Court Electronic Document" in str(h3_tag):
 				print "Login successful"
 				return True
-		return self.terminate_with_error_message()
+		self.terminate_with_error_message()
 
 	def get_case_details_page_contents(self):
 		"""
@@ -286,8 +337,15 @@ class Downloader():
 					case_details_page_contents
 
 		"""
- 
-		query_page_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl'
+		cookie_string = ''
+		#Set the cookie value for CSO login
+		if self.cookie_jar:
+			for cookie in self.cookie_jar:
+				cookie_string += cookie.name + "=" + cookie.value +"; "
+
+		self.opener.addheaders.append(("Cookie", cookie_string))
+
+		query_page_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/iquery.pl'
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
 		minimum_size_of_form_number = 5
@@ -305,20 +363,12 @@ class Downloader():
 				break
 
 		#Now we start hitting the content page
-		data_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
-
-		#Extract the pacer_case_id in case the extractor types are REFRESH_CASE or PACER_IMPORT_CASE
-		#The DATE_RANGE extraction does not need the pacer_case_id since it is not associated
-		#With any single case
-		if self.extractor_type_object.extractor_type == 'REFRESH_CASE' or self.extractor_type_object.extractor_type == 'PACER_IMPORT_CASE':
-			pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
-		elif self.extractor_type_object.extractor_type == 'DATE_RANGE':
-			pacer_case_id = ''
+		data_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/iquery.pl?" + required_form_number + "-L_1_0-1"
 
 		#The parameters to be encoded and sent as a search criteria
 		query_parameters = {
 			'UserType': self.extractor_object.user_type,
-			'all_case_ids': pacer_case_id,
+			'all_case_ids': self.extractor_object.pacer_case_id,
 			'case_num': self.extractor_object.case_number,
 			'Qry_filed_from': self.extractor_object.from_filed_date,
 			'Qry_filed_to': self.extractor_object.to_filed_date,
@@ -349,10 +399,10 @@ class Downloader():
 		case_links_list = []
 		case_number_list = []
 		file_names_list = []
-		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
+		case_details_base_link = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/'
 		case_count = 0
 		is_parsed = 0
-		page_path = '/home/mis/DjangoProject/pacer/extractor/Contents'
+		page_path = '/home/mis/DjangoProject/cso_login/extractor/Contents'
 		file_name = 'case_details_'+ str(datetime.datetime.now().strftime('%d_%m_%y_%H_%M_%S')).replace(' ', '') +'.html'
 
 		#Save the case details page having all case information
@@ -374,7 +424,7 @@ class Downloader():
 
 		pacer_case_id = 0
 		DEFAULT = 2
-		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		additional_info_base_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin'
 		additional_info_json = {}
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
@@ -385,14 +435,17 @@ class Downloader():
 		self.database_connection.autocommit(True)
 
 		case_number = case_number_matched.group(0)
-   	docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
+		docket_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/DktRpt.pl?"
+
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
-		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
+		docket_page_path = '/home/mis/DjangoProject/cso_login/extractor/Contents/case/'
 		save_docket_page_path = docket_page_path + case_file_name + '_docket.html'
 		docket_page = open(save_docket_page_path, 'w')
 
 		#Fetch the pacer_case_id from the database
-		pacer_case_id = self.find_case_object.get_pacer_case_id(case_number, self.opener)
+		#pacer_case_id = self.find_case_object.get_pacer_case_id(case_number, self.opener)
+		self.connection_cursor.execute("""SELECT pacer_case_id FROM courtcase WHERE case_number = %s""", (self.extractor_object.case_number ,))
+		pacer_case_id = self.connection_cursor.fetchone()[0]
 
 		#Get the unique numbers
 		docket_page_response = self.opener.open(docket_page_url)
@@ -427,7 +480,7 @@ class Downloader():
 			'PreResetFields': '',
 			'sort1': 'oldest date first'
 		}
-		docket_details_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?" + required_form_number + "-L_1_0-1"
+		docket_details_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/DktRpt.pl?" + required_form_number + "-L_1_0-1"
 		docket_query_parameters_encoded = urllib.urlencode(docket_query_parameters)
 		docket_query_request = urllib2.Request(docket_details_page_url, docket_query_parameters_encoded)
 		docket_page_response = self.opener.open(docket_query_request)
@@ -484,7 +537,7 @@ class Downloader():
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 		case_number = case_number_matched.group(0)
 	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
-		case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
+		case_file_object = open('/home/mis/DjangoProject/cso_login/extractor/Contents/case/' + file_name , 'w+')
 		case_file_object.write(page_contents)
 		return file_name
 
@@ -495,7 +548,7 @@ class Downloader():
 					self, case_details_page_contents
 		"""
 
-		case_details_base_link = 'https://dcecf.psc.uscourts.gov/cgi-bin/'
+		case_details_base_link = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/'
 		case_links_list = []
 		case_number_list = []
 		page_value_json = {}
@@ -514,7 +567,10 @@ class Downloader():
 		#open each link and save each page
 		for case_link in case_links_list:
 			case_details_page_response = self.opener.open( case_details_base_link + case_link )
-			pacer_case_id = case_link[-5:]
+			if self.extractor_object.IS_CSO_LOGIN == False:
+				pacer_case_id = case_link[-5:]
+			else:
+				pacer_case_id = case_link[-6:]
 			case_number = case_number_list[case_count].strip(r'\s*|\n')
 			case_number = re.sub(r'[A-Z]{3}\-?', "", case_number).replace(':', '').replace('-', '_')
 			if case_number[-1:] != '_':
@@ -524,14 +580,14 @@ class Downloader():
 				case_number = case_number[:-1]
 		 		file_name = case_number + '.html'
 
-			case_file_object = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name , 'w+')
+			case_file_object = open('/home/mis/DjangoProject/cso_login/extractor/Contents/case/' + file_name , 'w+')
 			case_file_object.write(case_details_page_response.read())
 			case_count += 1
 			case_file_object.close()
 
 			#Save into the courtcase_source_data_path table
 			courtcase_id = self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
-			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/Contents/case/' + str(file_name)
+			page_value_json['CASE'] = '/home/mis/DjangoProject/cso_login/extractor/Contents/case/' + str(file_name)
 			page_value_json = json.dumps(page_value_json)
 			self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
 			courtcase_id =  self.connection_cursor.fetchall()
@@ -571,7 +627,7 @@ class Downloader():
 					self, openerdatabase_connection
 		"""
 
-		logout_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/login.pl?logout"
+		logout_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/login.pl?logout"
 		logout_response = self.opener.open(logout_page_url)
 		logout_page_contents = logout_response.read()
 		print "Logout Successful"
@@ -640,7 +696,7 @@ class Parser():
 			cost = required_tags[::-1][0].text
 		else:
 			cost = None
-		print "This querying cost for this page:\t$", cost
+		print "The querying cost for this page:\t$", cost
 
 	def parse_case_details_page(self, file_name):
 		"""
@@ -652,11 +708,11 @@ class Parser():
 		"""
 
 		additional_info_json = {}
-		additional_info_base_url = 'https://dcecf.psc.uscourts.gov/cgi-bin'
+		additional_info_base_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin'
 		parties_involved = ''
 
 		#Parse for case details
-		case_file = open('/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name, 'r')
+		case_file = open('/home/mis/DjangoProject/cso_login/extractor/Contents/case/' + file_name, 'r')
 		contents = BeautifulSoup(case_file, 'html.parser')
 		center_tag =  contents.find_all('center')
 		case_details = re.split('Date filed: |Date terminated: |Date of last filing: | All Defendants ', center_tag[0].text)
@@ -700,7 +756,10 @@ class Parser():
 		if self.extractor_object.is_local_parsing:
 			pacer_case_id = self.extractor_object.pacer_case_id
 		else:
-			pacer_case_id = case_link[-5:]
+			if self.extractor_object.IS_CSO_LOGIN == False:
+				pacer_case_id = case_link[-5:]
+			else:
+				pacer_case_id = case_link[-6:]
 
 		#Perform tuple packing
 		required_case_details = (case_number, parties_involved,
@@ -761,7 +820,7 @@ class Parser():
 		self.database_connection.commit()
 
 		#Save into the courtcase_source_data_path table
-		page_value_json['CASE'] = '/home/mis/DjangoProject/pacer/extractor/Contents/case/' + file_name
+		page_value_json['CASE'] = '/home/mis/DjangoProject/cso_login/extractor/Contents/case/' + file_name
 		page_value_json = json.dumps(page_value_json)
 		self.connection_cursor.execute("SELECT id from courtcase ORDER BY id DESC LIMIT 1")
 		courtcase_id =  self.connection_cursor.fetchall()
@@ -799,7 +858,11 @@ class Parser():
 				all_td_tags = table_contents[case_details_index].find_all('td')
 				if len(all_td_tags) > 2:
 					case_number = all_td_tags[0].a.text
-					pacer_case_id = all_td_tags[0].a['href'][-5:]
+					if self.extractor_object.IS_CSO_LOGIN == False:
+						pacer_case_id = all_td_tags[0].a['href'][-5:]
+					else:
+						pacer_case_id = all_td_tags[0].a['href'][-6:]
+
 					parties_involved = all_td_tags[1].text
 					required_dates = all_td_tags[2].text
 					required_dates_split = required_dates.split()
@@ -871,7 +934,7 @@ class Parser():
 				self.database_connection.commit()
 
 	def fetch_local_parse_filename(self, case_number):
-		file_find_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case'
+		file_find_path = '/home/mis/DjangoProject/cso_login/extractor/Contents/case'
 		case_number = case_number.replace(':', '').replace('-', '_')
 		file_to_parse = case_number + '.html'
 		return file_to_parse
@@ -880,7 +943,7 @@ class Parser():
 		DEFAULT = 2
 		pacer_case_id = self.extractor_object.pacer_case_id
 		self.database_connection.autocommit(False)
-		file_find_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case'
+		file_find_path = '/home/mis/DjangoProject/cso_login/extractor/Contents/case'
 		docket_file = file_to_parse.strip('.hmtl') + '_docket' + '.html'
 		save_docket_page_path = file_find_path + '/' + docket_file
 		docket_file_object = open(save_docket_page_path, 'r')

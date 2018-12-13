@@ -14,8 +14,12 @@ class Scraper():
 	def run(self):
 
 		if not self.extractor_object.is_local_parsing:
+
 			# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
-			login_page_contents = self.downloader_object.login_pacer()
+			if self.extractor_object.IS_CSO_LOGIN == False:
+				login_page_contents = self.downloader_object.login_pacer()
+			else:
+				login_page_contents = self.downloader_object.cso_login()
 
 			# [ Step 2 of 8 ] : Validate the Login.
 			self.downloader_object.validate_login_success(login_page_contents)
@@ -50,6 +54,7 @@ class Scraper():
 			elif self.extractor_type == "FIND_CASE":
 				pacer_case_id = self.downloader_object.find_pacer_case_id()
 				print "The PACER case ID is:\t", pacer_case_id
+				print "The PACER case Number is:\t", self.extractor_object.case_number
 				break
 
 			elif self.extractor_type == "REFRESH_CASE":
