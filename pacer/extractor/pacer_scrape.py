@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 # [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
 #
+
 # [ Step 2 of 9 ] : Validate the Login.
 #
 # [ Step 3 of 9 ] : Parse the contents and get cookie.
@@ -135,6 +136,7 @@ class Extractor():
 			Tasks:
 				1. Close the database connection
 		"""
+
 
 		self.database_connection.close()
 
@@ -284,7 +286,7 @@ class Downloader():
 					case_details_page_contents
 
 		"""
-
+ 
 		query_page_url = 'https://dcecf.psc.uscourts.gov/cgi-bin/iquery.pl'
 		query_page_response = self.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
@@ -383,7 +385,7 @@ class Downloader():
 		self.database_connection.autocommit(True)
 
 		case_number = case_number_matched.group(0)
-		docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
+   	docket_page_url = "https://dcecf.psc.uscourts.gov/cgi-bin/DktRpt.pl?"
 		case_file_name =  case_number.replace(':', '').replace('-', '_')
 		docket_page_path = '/home/mis/DjangoProject/pacer/extractor/Contents/case/'
 		save_docket_page_path = docket_page_path + case_file_name + '_docket.html'
