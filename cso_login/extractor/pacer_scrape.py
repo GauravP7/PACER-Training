@@ -64,7 +64,7 @@ class Extractor():
 		"""
 
 		#Setup the CSO login
-		self.IS_CSO_LOGIN = True
+		self.IS_CSO_LOGIN = False
 
 		if self.IS_CSO_LOGIN == False:
 			self.courthouse_link_element = 'dcecf.psc'
@@ -77,7 +77,7 @@ class Extractor():
 						      password="Code@mispl",
 						      db="pacer_case_details")
 		self.connection_cursor = self.database_connection.cursor()
-		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1") #ORDER BY id DESC LIMIT
+		self.connection_cursor.execute("SELECT * FROM extractor ORDER BY id DESC LIMIT 1")
 
 		#Unpack tuples for extractor fields
 		extractor_search_criteria = self.connection_cursor.fetchall()
