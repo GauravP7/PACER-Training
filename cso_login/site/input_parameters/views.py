@@ -7,7 +7,7 @@ def index(request):
     courtcase_list = Courtcase.objects.all()
     download_tracker_list = DownloadTracker.objects.all()
     extractor_data_list = Extractor.objects.all()
-    html_template = loader.get_template('/home/mis/DjangoProject/pacer/site/input_parameters/Templates/index.html')
+    html_template = loader.get_template('/home/mis/DjangoProject/cso_login/site/input_parameters/Templates/index.html')
     contetnts = Context({'case_details_list': courtcase_list,
                             'additional_info_list': additional_info_list,
                             'page_content_list': download_tracker_list,

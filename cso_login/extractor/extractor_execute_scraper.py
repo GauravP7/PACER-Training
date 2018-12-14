@@ -3,8 +3,20 @@ import find_case as find_case_object
 import find_case
 
 class Scraper():
+	"""
+		Class Holds the methods to set up the execution
+		point and flow of the program.
+		Member functions:
+				 1. run(self)
+	"""
 
 	def __init__(self):
+		"""
+			Default constructor
+			Tasks:
+			 1. Instantiate the classes of pacer_scrape and find_case module
+		"""
+
 		self.downloader_object = pacer_scraper.Downloader()
 		self.parser_object = pacer_scraper.Parser()
 		self.extractor_object = pacer_scraper.Extractor()
@@ -12,10 +24,19 @@ class Scraper():
 		self.extractor_type = self.extractor_object.set_extractor_type()
 
 	def run(self):
+		"""
+			Runs the extractor.
+			Arguments:
+					self
+		"""
 
 		if not self.extractor_object.is_local_parsing:
+
 			# [ Step 1 of 8 ] : Hit the first page of PACER training site and Login.
-			login_page_contents = self.downloader_object.login_pacer()
+			if pacer_scraper.IS_CSO_LOGIN == False:
+				login_page_contents = self.downloader_object.login_pacer()
+			else:
+				login_page_contents = self.downloader_object.login_cso()
 
 			# [ Step 2 of 8 ] : Validate the Login.
 			self.downloader_object.validate_login_success(login_page_contents)
@@ -50,6 +71,7 @@ class Scraper():
 			elif self.extractor_type == "FIND_CASE":
 				pacer_case_id = self.downloader_object.find_pacer_case_id()
 				print "The PACER case ID is:\t", pacer_case_id
+				print "The PACER case Number is:\t", self.extractor_object.case_number
 				break
 
 			elif self.extractor_type == "REFRESH_CASE":
@@ -63,7 +85,7 @@ class Scraper():
 
 				#check for local parsing
 				if self.extractor_object.is_local_parsing:
-					file_to_parse = self.parser_object.fetch_local_parse_filename(self.extractor_object.case_number)
+					file_to_parse = self.parser_object.get_local_parse_filename(self.extractor_object.case_number)
 
 					# [ Step 7 of 8 ] : Save the case details.
 					case_details_tuple = self.parser_object.parse_case_details_page(file_to_parse)
@@ -72,9 +94,9 @@ class Scraper():
 					#Save docket page
 					self.parser_object.parse_local_docket_page(file_to_parse)
 				else:
-					is_exists_pacer_case_id = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
+					is_pacer_case_id_exists = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
 
-					if not is_exists_pacer_case_id:
+					if not is_pacer_case_id_exists:
 						print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
 
 						# [ Step 5 of 8 ] : Save the Web page (HTML content) in a folder.
@@ -88,6 +110,7 @@ class Scraper():
 					else:
 						#REFRESH_CASE if the case already exists
 						self.extractor_type = "REFRESH_CASE"
+						continue
 				break
 
 		if not self.extractor_object.is_local_parsing:
