@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 # [ Step 9 of 9 ] : Logout from the website.
 
 #Setup the CSO login
-IS_CSO_LOGIN = True
+IS_CSO_LOGIN = False
 
 if IS_CSO_LOGIN == False:
 	courthouse_link_element = 'dcecf.psc'
