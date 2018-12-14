@@ -70,6 +70,16 @@ class Extractor():
 			 2. Initialize the search criteria, reading from the database
 		"""
 
+<<<<<<< HEAD:cso_login/extractor/extractor_pacer_scrape.py
+=======
+		#Setup the CSO login
+		self.IS_CSO_LOGIN = False
+
+		if self.IS_CSO_LOGIN == False:
+			self.courthouse_link_element = 'dcecf.psc'
+		elif self.IS_CSO_LOGIN == True:
+			self.courthouse_link_element = 'ecf-test.cacd'
+>>>>>>> f6d2b65cb6ee16e5818da9c028be39abe54c95dc:cso_login/extractor/pacer_scrape.py
 
 		#settig up database connection
 		self.database_connection = MySQLdb.connect(host= "",
@@ -232,8 +242,14 @@ class Downloader():
 				self.username = credentials_data['pacer_login'][0]['username']
 				self.password = credentials_data['pacer_login'][0]['password']
 
+<<<<<<< HEAD:cso_login/extractor/extractor_pacer_scrape.py
 	def login_cso(self):
 		self.set_credentials()
+=======
+	def cso_login(self):
+		self.username = ''
+		self.password = ''
+>>>>>>> f6d2b65cb6ee16e5818da9c028be39abe54c95dc:cso_login/extractor/pacer_scrape.py
 
 		cso_login_url = "https://train-login.uscourts.gov/csologin/login.jsf?pscCourtId=CACXDC&appurl=https%3A%2F%2Fecf-test.cacd.uscourts.gov%2Fcgi-bin%2Fshowpage.pl%3F16"
 
