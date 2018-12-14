@@ -64,7 +64,7 @@ class Extractor():
 		"""
 
 		#Setup the CSO login
-		self.IS_CSO_LOGIN = True
+		self.IS_CSO_LOGIN = False
 
 		if self.IS_CSO_LOGIN == False:
 			self.courthouse_link_element = 'dcecf.psc'
@@ -230,8 +230,8 @@ class Downloader():
 			self.password = credentials_data['password']
 
 	def cso_login(self):
-		self.username = 'bishwas123'
-		self.password = 'Bishw@s123'
+		self.username = ''
+		self.password = ''
 
 		cso_login_url = "https://train-login.uscourts.gov/csologin/login.jsf?pscCourtId=CACXDC&appurl=https%3A%2F%2Fecf-test.cacd.uscourts.gov%2Fcgi-bin%2Fshowpage.pl%3F16"
 
