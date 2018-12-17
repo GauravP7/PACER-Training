@@ -1046,8 +1046,6 @@ class Parser():
 	def local_parse(self):
 
 		file_to_parse = self.get_local_parse_filename(self.extractor_object.case_number)
-
-		# [ Step 7 of 8 ] : Save the case details.
 		case_details_tuple = self.parse_case_details_page(file_to_parse)
 		self.save_case_details(case_details_tuple, file_to_parse)
 
