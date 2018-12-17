@@ -10,26 +10,25 @@ import find_case
 from cookielib import CookieJar
 from bs4 import BeautifulSoup
 
-# [ Step 1 of 9 ] : Hit the first page of PACER training site and Login.
+# [ Step 1 of 7 ] : Hit the first page of PACER training site and Login.
 #
-# [ Step 2 of 9 ] : Validate the Login.
+# [ Step 2 of 7 ] : Validate the Login.
 #
-# [ Step 3 of 9 ] : Parse the contents and get cookie.
+# [ Step 3 of 7 ] : Parse the contents and get cookie.
 #
-# [ Step 4 of 9 ] : Query as per the input criteria.
+# [ Step 4 of 7 ] : Query as per the input criteria.
 #
-# [ Step 5 of 9 ] : Save the Web page (HTML content) in a folder.
+# [ Step 5 of 7 ] : Save the Web page (HTML content) in a folder.
 #
-# [ Step 6 of 9 ] : Display cost of the page.
+# [ Step 6 of 7 ] : Save the case details.
 #
-# [ Step 8 of 9 ] : Save the case details.
-#
-# [ Step 9 of 9 ] : Logout from the website.
+# [ Step 7 of 7 ] : Logout from the website.
 
 #Setup the CSO login
 IS_CSO_LOGIN = False
 
 #Set Extractor type
+EXTRACTOR_TYPE = ""
 DATE_RANGE = "DATE_RANGE"
 REFRESH_CASE = "REFRESH_CASE"
 PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
@@ -37,8 +36,7 @@ PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
 class Extractor():
 	"""
 		Class holds the search criteria used to query the case details.
-		Member functions:
-				1. set_extractor_type(self)
+
 		Inherits:
 				None
 	"""
@@ -120,19 +118,6 @@ class Extractor():
 		self.type = type
 		self.exact_matches_only = 0
 
-	def set_extractor_type(self):
-		if self.extractor_type_id == 1:
-			self.extractor_type = "DATE_RANGE"
-		elif self.extractor_type_id == 2:
-			self.extractor_type = "REFRESH_CASE"
-		elif self.extractor_type_id == 3:
-			self.extractor_type = "PACER_IMPORT_CASE"
-		elif self.extractor_type_id == 4:
-			self.extractor_type = "PARSE_FILE"
-		elif self.extractor_type_id == 5:
-			self.extractor_type = "FIND_CASE"
-		return self.extractor_type
-
 	def __del__(self):
 		"""
 			Destructor
@@ -194,11 +179,11 @@ class Downloader():
 		#Set the extractor type
 		self.extractor_type = ""
 		if self.extractor_object.extractor_type_id == 1:
-			self.extractor_type = DATE_RANGE
+			EXTRACTOR_TYPE = DATE_RANGE
 		elif self.extractor_object.extractor_type_id == 2:
-			self.extractor_type = REFRESH_CASE
+			EXTRACTOR_TYPE = REFRESH_CASE
 		elif self.extractor_object.extractor_type_id == 3:
-			self.extractor_type = PACER_IMPORT_CASE
+			EXTRACTOR_TYPE = PACER_IMPORT_CASE
 
 		#settig up database connection
 		self.connection = MySQLdb.connect(
@@ -545,7 +530,7 @@ class Downloader():
 
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 		case_number = case_number_matched.group(0)
-	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
+	 	file_name = cacase_details_listse_number.replace(':','_').replace('-','_') + '.html'
 		case_file_object = open('/home/mis/DjangoProject/pacer_training/extractor/contents/case/' + file_name , 'w+')
 		case_file_object.write(page_contents)
 		return file_name
@@ -625,7 +610,14 @@ class Downloader():
 		else:
 			return False
 
-	def find_pacer_case_id(self):
+	def download(self, case_details_page_contents):
+		self.case_details_list = []
+		self.save_all_case_details_page(case_details_page_contents)
+		parser_object = Parser()
+		parser_object.display_page_cost(case_details_page_contents)
+		EXTRACTOR_TYPE = "PARSE_FILE"
+		
+	def display_pacer_case_id(self):
 		"""
 			Used to find the pacer_case_id.
 			This method is defined here because the
@@ -635,8 +627,10 @@ class Downloader():
 			Returns:
 					pacer_case_id - Searched using the case_number
 		"""
-		pacser_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
-		return pacser_case_id
+		pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
+		print "The PACER case ID is:\t", pacer_case_id
+		print "The PACER case Number is:\t", self.extractor_object.case_number
+		return
 
 	def logout(self):
 		"""
@@ -1013,6 +1007,13 @@ class Parser():
 		courtcase_update_query = """UPDATE courtcase SET courtcase_source_value = %s WHERE pacer_case_id = %s"""
 		self.connection_cursor.execute(courtcase_update_query, (courtcase_source_value, pacer_case_id,))
 		self.connection.commit()
+
+	def parse(self, case_details_page_contents):
+		case_details_list = self.get_metadata_page()
+		self.save_metadata_page_contents(case_details_list)
+
+	def parse_url_data():
+
 
 	def __del__(self):
 		"""
