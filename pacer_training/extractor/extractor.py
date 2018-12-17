@@ -9,9 +9,6 @@ class Scraper():
 				 1. run(self)
 	"""
 
-		# self.find_case_object = find_case.FindCase()
-		# self.extractor_type = self.extractor_object.set_extractor_type()
-
 	def run(self):
 		"""
 			Runs the extractor.
@@ -37,7 +34,7 @@ class Scraper():
 			# [ Step 4 of 7 ] : Query as per the input criteria.
 			case_details_page_contents = downloader_object.get_case_details_page_contents()
 
-		#Set the extractor type
+		#Check for DATE_RANGE extractor type
 		if downloader_object.extractor_type == "DATE_RANGE":
 
 			# [ Step 5 of 7 ] : Save the Web page (HTML content) in a folder.
@@ -49,13 +46,11 @@ class Scraper():
 
 		if not extractor_object.is_local_parsing:
 			downloader_object.parse_url_data(case_details_page_contents)
-		else:
-			parser_object.local_parse()
-
-		if not extractor_object.is_local_parsing:
 
 			# [ Step 7 of 7 ] : Logout from the website.
 			downloader_object.logout()
+		else:
+			parser_object.local_parse()
 
 scraper_object = Scraper()
 scraper_object.run()
