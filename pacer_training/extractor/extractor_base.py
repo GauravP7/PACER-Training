@@ -32,6 +32,8 @@ EXTRACTOR_TYPE = ""
 DATE_RANGE = "DATE_RANGE"
 REFRESH_CASE = "REFRESH_CASE"
 PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
+PARSE_FILE = "PARSE_FILE"
+FIND_CASE = "FIND_CASE"
 
 class Extractor():
 	"""
@@ -50,7 +52,6 @@ class Extractor():
 		"""
 
 		#Setup the CSO login
-
 		if IS_CSO_LOGIN == False:
 			self.courthouse_link_element = 'dcecf.psc'
 		elif IS_CSO_LOGIN == True:
@@ -184,6 +185,11 @@ class Downloader():
 			EXTRACTOR_TYPE = REFRESH_CASE
 		elif self.extractor_object.extractor_type_id == 3:
 			EXTRACTOR_TYPE = PACER_IMPORT_CASE
+		elif self.extractor_object.extractor_type_id == 4:
+			EXTRACTOR_TYPE = PARSE_FILE
+		elif self.extractor_object.extractor_type_id == 5:
+			EXTRACTOR_TYPE = FIND_CASE
+		self.extractor_type = EXTRACTOR_TYPE
 
 		#settig up database connection
 		self.connection = MySQLdb.connect(
@@ -413,6 +419,7 @@ class Downloader():
 		DEFAULT = 2
 		additional_info_base_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin'
 		additional_info_json = {}
+		required_form_number = ''
 		case_number = case_number.strip(' ').strip('\t').strip('\n')
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 
@@ -530,7 +537,7 @@ class Downloader():
 
 		case_number_matched = re.match(r'^\d{1}:\d{2}\-\w{2}\-\d{5}', case_number)
 		case_number = case_number_matched.group(0)
-	 	file_name = cacase_details_listse_number.replace(':','_').replace('-','_') + '.html'
+	 	file_name = case_number.replace(':','_').replace('-','_') + '.html'
 		case_file_object = open('/home/mis/DjangoProject/pacer_training/extractor/contents/case/' + file_name , 'w+')
 		case_file_object.write(page_contents)
 		return file_name
@@ -615,22 +622,45 @@ class Downloader():
 		self.save_all_case_details_page(case_details_page_contents)
 		parser_object = Parser()
 		parser_object.display_page_cost(case_details_page_contents)
-		EXTRACTOR_TYPE = "PARSE_FILE"
-		
+		EXTRACTOR_TYPE = PARSE_FILE
+
 	def display_pacer_case_id(self):
 		"""
 			Used to find the pacer_case_id.
 			This method is defined here because the
-			find_case module makes use of the opener.
+			find_case moduldownload(e makes use of the opener.
 			Arguments:
 					self
 			Returns:
 					pacer_case_id - Searched using the case_number
 		"""
+
 		pacer_case_id = self.find_case_object.get_pacer_case_id(self.extractor_object.case_number, self.opener)
 		print "The PACER case ID is:\t", pacer_case_id
 		print "The PACER case Number is:\t", self.extractor_object.case_number
 		return
+
+	def parse_url_data(self, case_details_page_contents):
+
+		EXTRACTOR_TYPE = self.extractor_type
+		self.parser_object = Parser()
+
+		#REFRESH_CASE without DATE_RANGE
+		if self.extractor_object.case_number != '' and EXTRACTOR_TYPE == REFRESH_CASE:
+			self.get_page_based_on_case_number(self.extractor_object.case_number)
+		if EXTRACTOR_TYPE == FIND_CASE:
+			self.display_pacer_case_id()
+		if EXTRACTOR_TYPE == PACER_IMPORT_CASE:
+			is_pacer_case_id_exists = self.pacer_case_id_exists(self.extractor_object.case_number)
+			if not is_pacer_case_id_exists:
+				print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
+				new_case_file_name = self.save_import_case(case_details_page_contents, self.extractor_object.case_number)
+				case_details_tuple = self.parser_object.parse_case_details_page(new_case_file_name)
+				self.parser_object.save_case_details(case_details_tuple, new_case_file_name)
+				EXTRACTOR_TYPE = "REFRESH_CASE"
+				self.get_page_based_on_case_number(self.extractor_object.case_number)
+			else:
+				self.get_page_based_on_case_number(self.extractor_object.case_number)
 
 	def logout(self):
 		"""
@@ -673,10 +703,9 @@ class Parser():
 				2. parse_case_details_page(self, file_name)
 				3. save_case_details(self,  case_details_tuple, file_name)
 				4. get_metadata_page(self)
-				5. save_metadata_page_contents(self, case_details_list)
-				6. save_metadata_page_contents(self, case_details_tuple_list)
-				7. get_local_parse_filename(self, case_number)
-				8. parse_local_docket_page(self, file_to_parse)
+				5. save_metadata_page_contents(self, case_details_tuple_list)
+				6. get_local_parse_filename(self, case_number)
+				7. parse_local_docket_page(self, file_to_parse)
 		Inherits:
 				None
 	"""
@@ -690,6 +719,7 @@ class Parser():
 		"""
 
 		self.extractor_object = Extractor()
+		self.downloader_object = Downloader()
 
 		#settig up database connection
 		self.connection = MySQLdb.connect(
@@ -1011,9 +1041,18 @@ class Parser():
 	def parse(self, case_details_page_contents):
 		case_details_list = self.get_metadata_page()
 		self.save_metadata_page_contents(case_details_list)
+		EXTRACTOR_TYPE = REFRESH_CASE
 
-	def parse_url_data():
+	def local_parse(self):
 
+		file_to_parse = self.get_local_parse_filename(self.extractor_object.case_number)
+
+		# [ Step 7 of 8 ] : Save the case details.
+		case_details_tuple = self.parse_case_details_page(file_to_parse)
+		self.save_case_details(case_details_tuple, file_to_parse)
+
+		#Save docket page
+		self.parse_local_docket_page(file_to_parse)
 
 	def __del__(self):
 		"""

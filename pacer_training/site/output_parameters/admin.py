@@ -22,7 +22,10 @@ class CourtcaseSourceDisplay(admin.ModelAdmin):
     list_display = ('id', 'value',)
 
 class AdditionalInfoDisplay(admin.ModelAdmin):
-    list_display = ('id', 'additional_info_json',)
+    list_display = ('id', 'courtcase_id', 'additional_info_json',)
+
+    def courtcase_id(self, obj):
+        return obj.courtcase_id
 
 class CourtcaseSourceDataPathDisplay(admin.ModelAdmin):
     list_display = ('id', 'get_courtcase_id', 'page_value_json',)
