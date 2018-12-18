@@ -34,6 +34,10 @@ PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
 PARSE_FILE = "PARSE_FILE"
 FIND_CASE = "FIND_CASE"
 
+#Set the values for METADATA and DEFAULT
+METADATA = 1
+DEFAULT = 2
+
 class Extractor():
 	"""
 		Class holds the search criteria used to query the case details.
@@ -156,15 +160,16 @@ class Downloader():
 				 4. set_cookie_value(self, login_page_contents)
 				 5. validate_login_success(self, login_page_contents)
 				 6. get_case_details_page_contents(self)
-				 7. save_all_case_details_page(self, case_details_page_contents)
-				 8. save_page_based_on_case_number(self, case_number)
-				 9. save_import_case(self, page_contents, case_number)
-				10. save_individual_cases(self, case_details_page_contents)
-				11. pacer_case_id_exists(self, case_number)
-				12. download(self)
-				13. display_pacer_case_id(self)
-				14. logout(self)
-				15. terminate_with_error_message(self)
+				 7. display_page_cost(self, case_details_page_contents):
+				 8. save_all_case_details_page(self, case_details_page_contents)
+				 9. save_page_based_on_case_number(self, case_number)
+				10. save_import_case(self, page_contents, case_number)
+				11. save_individual_cases(self, case_details_page_contents)
+				12. pacer_case_id_exists(self, case_number)
+				13. download(self)
+				14. display_pacer_case_id(self)
+				15. logout(self)
+				16. terminate_with_error_message(self)
 	"""
 
 	def __init__(self):
@@ -377,6 +382,22 @@ class Downloader():
 		case_details_page_contents = query_response.read()
 		return case_details_page_contents
 
+	def display_page_cost(self, case_details_page_contents):
+		"""
+			Used to display the cost of the parsed page
+			Arguments:
+					self, case_details_page_contents
+		"""
+
+		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
+		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
+
+		if required_tags:
+			cost = required_tags[::-1][0].text
+		else:
+			cost = None
+		print "The querying cost for this page:\t$", cost
+
 	def save_all_case_details_page(self, case_details_page_contents):
 		"""
 			Saves the HTML page containing the metadata of the case.
@@ -415,7 +436,6 @@ class Downloader():
 		"""
 
 		pacer_case_id = 0
-		DEFAULT = 2
 		additional_info_base_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin'
 		additional_info_json = {}
 		required_form_number = ''
@@ -612,8 +632,7 @@ class Downloader():
 		self.validate_login_success(login_page_contents)
 		self.set_cookie_value(login_page_contents)
 		case_details_page_contents = self.get_case_details_page_contents()
-		self.parser_object = Parser()
-		self.parser_object.display_page_cost(case_details_page_contents)
+		self.display_page_cost(case_details_page_contents)
 		self.save_all_case_details_page(case_details_page_contents)
 		self.save_individual_cases(case_details_page_contents)
 
@@ -670,16 +689,15 @@ class Parser():
 		Class is holds the methods to scrape the case
 		related data from the PACER training website.
 		Member functions:
-				 1. display_page_cost(self, case_details_page_contents)
-				 2. parse_case_details_page(self, file_name)
-				 3. save_case_details(self, case_details_tuple, file_name)
-				 4. get_metadata_page(self)
-				 5. save_metadata_page_contents(self, case_details_tuple_list)
-				 6. get_local_parse_filename(self, case_number)
-				 7. parse_local_docket_page(self, file_to_parse)
-				 8. parse(self)
-				 9. parse_url_data(self)
-				10. parse_local_data(self)
+				 1. parse_case_details_page(self, file_name)
+				 2. save_case_details(self, case_details_tuple, file_name)
+				 3. get_metadata_page(self)
+				 4. save_metadata_page_contents(self, case_details_tuple_list)
+				 5. get_local_parse_filename(self, case_number)
+				 6. parse_local_docket_page(self, file_to_parse)
+				 7. parse(self)
+				 8. parse_url_data(self)
+				 9. parse_local_data(self)
 		Inherits:
 				None
 	"""
@@ -703,22 +721,6 @@ class Parser():
 						      	db="pacer_case_details"
 						  )
 		self.connection_cursor = self.connection.cursor()
-
-	def display_page_cost(self, case_details_page_contents):
-		"""
-			Used to display the cost of the parsed page
-			Arguments:
-					self, case_details_page_contents
-		"""
-
-		soup_for_cost = BeautifulSoup(case_details_page_contents, 'html.parser')
-		required_tags = soup_for_cost.find_all('font', color='DARKBLUE', size='-1')
-
-		if required_tags:
-			cost = required_tags[::-1][0].text
-		else:
-			cost = None
-		print "The querying cost for this page:\t$", cost
 
 	def parse_case_details_page(self, file_name):
 		"""
@@ -802,8 +804,6 @@ class Parser():
 		(case_number, parties_involved,
 		case_filed_date, case_closed_date,
 		pacer_case_id, additional_info_json) = case_details_tuple
-		METADATA = 1
-		DEFAULT = 2
 		page_value_json = {}
 
 		#Save details into the database
@@ -927,7 +927,6 @@ class Parser():
 		"""
 
 		page_value_json = {}
-		METADATA = 1
 		courtcase_source_value = METADATA
 		case_details_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
 									   parties_involved, case_filed_date, case_closed_date)
@@ -1003,7 +1002,6 @@ class Parser():
 					file_to_parse
 		"""
 
-		DEFAULT = 2
 		pacer_case_id = self.extractor_object.pacer_case_id
 		self.connection.autocommit(False)
 		file_find_path = '/home/mis/DjangoProject/pacer_training/extractor/contents/case'
@@ -1057,22 +1055,26 @@ class Parser():
 			Arguments:
 					self
 		"""
-
+		#Check if the local parsing is to be done
 		if not self.extractor_object.is_local_parsing:
 
 			login_page_contents = self.downloader_object.login_pacer()
 			self.downloader_object.set_cookie_value(login_page_contents)
 			self.downloader_object.validate_login_success(login_page_contents)
 
-			#Save the docket page
-			if self.extractor_object.case_number != '' and self.extractor_object.extractor_type == REFRESH_CASE:
-				self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
+			#Check if the extractor type is REFRESH_CASE
+			if self.extractor_object.extractor_type == REFRESH_CASE:
+				#Save the docket page if the case_number is specified
+				if self.extractor_object.case_number != '':
+					self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
 
-			#PACER_IMPORT_CASE
+			#Check if the extractor type is PACER_IMPORT_CASE
 			elif self.extractor_object.extractor_type == PACER_IMPORT_CASE:
 				is_pacer_case_id_exists = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
 
-				#Non existing case
+				#Check if the case_number is already stored or not.
+				#If the case does not exist in the database, them
+				#import it from the PACER training website and store it.
 				if not is_pacer_case_id_exists:
 					print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
 					case_details_page_contents = self.downloader_object.get_case_details_page_contents()
@@ -1082,16 +1084,21 @@ class Parser():
 					self.extractor_object.extractor_type = "REFRESH_CASE"
 					self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
 
-				#Existing case
+				#If the case already exists in the database, them
+				#REFRESH it from the PACER training website and store
+				#it's docket file.
 				else:
 					self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
+
+		#Perform local parsing by reading the
+		#case_number and pacer_case_id from the extractor input
 		else:
 			self.parse_local_data()
 
 	def parse_local_data(self):
 		"""
-			Used to parse the files if the type of parsing
-			is local parsing.
+			Used to make the appropriate function calls
+			of functions that are responsible for local parsing.
 			Arguments:
 					self
 		"""
