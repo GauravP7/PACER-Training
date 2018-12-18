@@ -28,7 +28,6 @@ from bs4 import BeautifulSoup
 IS_CSO_LOGIN = False
 
 #Set Extractor type
-EXTRACTOR_TYPE = ""
 DATE_RANGE = "DATE_RANGE"
 REFRESH_CASE = "REFRESH_CASE"
 PACER_IMPORT_CASE = "PACER_IMPORT_CASE"
@@ -38,7 +37,6 @@ FIND_CASE = "FIND_CASE"
 class Extractor():
 	"""
 		Class holds the search criteria used to query the case details.
-
 		Inherits:
 				None
 	"""
@@ -56,6 +54,12 @@ class Extractor():
 			self.courthouse_link_element = 'dcecf.psc'
 		elif IS_CSO_LOGIN == True:
 			self.courthouse_link_element = 'ecf-test.cacd'
+
+		#Initialize the opener
+		self.cookie_jar = CookieJar()
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie_jar))
+		urllib2.install_opener(self.opener)
+
 
 		#settig up database connection
 		self.connection = MySQLdb.connect(
@@ -119,6 +123,19 @@ class Extractor():
 		self.type = type
 		self.exact_matches_only = 0
 
+		#Set the extractor type
+		self.extractor_type = ""
+		if self.extractor_type_id == 1:
+			self.extractor_type = DATE_RANGE
+		elif self.extractor_type_id == 2:
+			self.extractor_type = REFRESH_CASE
+		elif self.extractor_type_id == 3:
+			self.extractor_type = PACER_IMPORT_CASE
+		elif self.extractor_type_id == 4:
+			self.extractor_type = PARSE_FILE
+		elif self.extractor_type_id == 5:
+			self.extractor_type = FIND_CASE
+
 	def __del__(self):
 		"""
 			Destructor
@@ -134,17 +151,20 @@ class Downloader():
 		related pages from the PACER training website.
 		Member functions:
 				 1. set_credentials(self)
-				 2. login_pacer(self)
-				 3. set_cookie_value(self, login_page_contents)
-				 4. validate_login_success(self, login_page_contents)
-				 5. get_case_details_page_contents(self)pacer_case_id
-				 6. save_all_case_details_page(self, case_details_page_contents)
-				 7. get_page_based_on_case_number(self, case_number)
-				 8. save_import_case(self, page_contents, case_number)
-				 9. save_indivisual_cases(self, case_details_page_contents)
-				10. pacer_case_id_exists(self, case_number)
-				11. logout(self)
-				12. terminate_with_error_message(self)
+				 2. login_cso(self)
+				 3. login_pacer(self)
+				 4. set_cookie_value(self, login_page_contents)
+				 5. validate_login_success(self, login_page_contents)
+				 6. get_case_details_page_contents(self)
+				 7. save_all_case_details_page(self, case_details_page_contents)
+				 8. save_page_based_on_case_number(self, case_number)
+				 9. save_import_case(self, page_contents, case_number)
+				10. save_individual_cases(self, case_details_page_contents)
+				11. pacer_case_id_exists(self, case_number)
+				12. download(self)
+				13. display_pacer_case_id(self)
+				14. logout(self)
+				15. terminate_with_error_message(self)
 	"""
 
 	def __init__(self):
@@ -155,14 +175,8 @@ class Downloader():
 			 2. Initializes cookie
 			 3. Initializes login credentials
 			 4. Instantiates the required classes
-			 5. Initializes the extractor_type based on input from extractor
-			 6. Sets up the database connection and cursor
+			 5. Sets up the database connection and cursor
 		"""
-
-		#Initialize the opener
-		self.cookie_jar = CookieJar()
-		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie_jar))
-		#urllib2.install_opener(self.opener)
 
 		#Initialize the cookie_value
 		self.pacer_session_cookie_value = ""
@@ -176,20 +190,6 @@ class Downloader():
 
 		#Creating the extractor obj
 		self.extractor_object = Extractor()
-
-		#Set the extractor type
-		self.extractor_type = ""
-		if self.extractor_object.extractor_type_id == 1:
-			EXTRACTOR_TYPE = DATE_RANGE
-		elif self.extractor_object.extractor_type_id == 2:
-			EXTRACTOR_TYPE = REFRESH_CASE
-		elif self.extractor_object.extractor_type_id == 3:
-			EXTRACTOR_TYPE = PACER_IMPORT_CASE
-		elif self.extractor_object.extractor_type_id == 4:
-			EXTRACTOR_TYPE = PARSE_FILE
-		elif self.extractor_object.extractor_type_id == 5:
-			EXTRACTOR_TYPE = FIND_CASE
-		self.extractor_type = EXTRACTOR_TYPE
 
 		#settig up database connection
 		self.connection = MySQLdb.connect(
@@ -222,7 +222,7 @@ class Downloader():
 
 		#get viewstate value
 		login_page_request = urllib2.Request(cso_login_url)
-		login_page_response = self.opener.open(login_page_request)
+		login_page_response = extractor_object.opener.open(login_page_request)
 		login_page_contents = login_page_response.read()
 		login_page_soup = BeautifulSoup(login_page_contents, 'html.parser')
 
@@ -245,10 +245,10 @@ class Downloader():
 
 		encoded_login_credentials = urllib.urlencode(formdata)
 		login_page_request = urllib2.Request(cso_login_url)
-		login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
+		login_page_response = self.extractor_object.opener.open(login_page_request , encoded_login_credentials)
 		second_page_url = "https://ecf-test.cacd.uscourts.gov/cgi-bin/showpage.pl?16"
 		second_page_request = urllib2.Request(second_page_url)
-		second_page_response = self.opener.open(second_page_request)
+		second_page_response = self.extractor_object.opener.open(second_page_request)
 		contents_to_send = second_page_response.read()
 		return contents_to_send
 
@@ -269,7 +269,7 @@ class Downloader():
 			encoded_login_credentials = urllib.urlencode(credentials)
 			login_page = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/login.pl?logout'
 			login_page_request = urllib2.Request(login_page)
-			login_page_response = self.opener.open(login_page_request , encoded_login_credentials)
+			login_page_response = self.extractor_object.opener.open(login_page_request , encoded_login_credentials)
 			login_page_contents = login_page_response.read()
 			return login_page_contents
 
@@ -294,11 +294,11 @@ class Downloader():
 
 		#Add the required headers to the opener
 		if not IS_CSO_LOGIN:
-			self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
-			self.opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
-			self.opener.addheaders.append(('Cookie', self.pacer_session_cookie_value ))
+			self.extractor_object.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36')]
+			self.extractor_object.opener.addheaders.append(('Referer','https://dcecf.psc.uscourts.gov/cgi-bin/ShowIndex.pl'))
+			self.extractor_object.opener.addheaders.append(('Cookie', self.pacer_session_cookie_value ))
 		else:
-			self.opener.addheaders.append(('Referer', 'https://ecf-test.cacd.uscourts.gov/cgi-bin/iquery.pl'))
+			self.extractor_object.opener.addheaders.append(('Referer', 'https://ecf-test.cacd.uscourts.gov/cgi-bin/iquery.pl'))
 
 	def validate_login_success(self, login_page_contents):
 		"""
@@ -330,14 +330,14 @@ class Downloader():
 		required_form_number = ''
 
 		#Set the cookie value for CSO login
-		if self.cookie_jar:
-			for cookie in self.cookie_jar:
+		if self.extractor_object.cookie_jar:
+			for cookie in self.extractor_object.cookie_jar:
 				cookie_string += cookie.name + "=" + cookie.value +"; "
 
-		self.opener.addheaders.append(("Cookie", cookie_string))
+		self.extractor_object.opener.addheaders.append(("Cookie", cookie_string))
 
 		query_page_url = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/iquery.pl'
-		query_page_response = self.opener.open(query_page_url)
+		query_page_response = self.extractor_object.opener.open(query_page_url)
 		query_page_contents = query_page_response.read()
 		minimum_size_of_form_number = 5
 		pacer_case_id = ''
@@ -373,14 +373,13 @@ class Downloader():
 
 		query_parameters_encoded = urllib.urlencode(query_parameters)
 		query_request = urllib2.Request(data_page_url, query_parameters_encoded)
-		query_response = self.opener.open(query_request)
+		query_response = self.extractor_object.opener.open(query_request)
 		case_details_page_contents = query_response.read()
 		return case_details_page_contents
 
 	def save_all_case_details_page(self, case_details_page_contents):
 		"""
-			Saves the pages related to case details along with the pages
-			containing additional information
+			Saves the HTML page containing the metadata of the case.
 			 Arguments:
 			 		self, case_details_page_contents
 			Returns:
@@ -406,7 +405,7 @@ class Downloader():
 		self.connection_cursor.execute(path_insert_query, ( is_parsed, page_path + '/' + file_name,))
 		self.connection.commit()
 
-	def get_page_based_on_case_number(self, case_number):
+	def save_page_based_on_case_number(self, case_number):
 		"""
 			Used if the extractor type is REFRESH_CASE, to save
 			the page containing Docket, path and the additional information
@@ -443,7 +442,7 @@ class Downloader():
 			pacer_case_id = pacer_case_id_value
 
 		#Get the unique numbers
-		docket_page_response = self.opener.open(docket_page_url)
+		docket_page_response = self.extractor_object.opener.open(docket_page_url)
 		docket_page_contents = docket_page_response.read()
 		minimum_size_of_form_number = 5
 
@@ -478,7 +477,7 @@ class Downloader():
 		docket_details_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/DktRpt.pl?" + required_form_number + "-L_1_0-1"
 		docket_query_parameters_encoded = urllib.urlencode(docket_query_parameters)
 		docket_query_request = urllib2.Request(docket_details_page_url, docket_query_parameters_encoded)
-		docket_page_response = self.opener.open(docket_query_request)
+		docket_page_response = self.extractor_object.opener.open(docket_query_request)
 		docket_page_contents = docket_page_response.read()
 		docket_page.write(docket_page_contents)
 		docket_page.close()
@@ -542,7 +541,7 @@ class Downloader():
 		case_file_object.write(page_contents)
 		return file_name
 
-	def save_indivisual_cases(self, case_details_page_contents):
+	def save_individual_cases(self, case_details_page_contents):
 		"""
 			Used to save the HTML of individual cases.
 			Arguments:
@@ -552,7 +551,6 @@ class Downloader():
 		case_details_base_link = 'https://' + self.extractor_object.courthouse_link_element + '.uscourts.gov/cgi-bin/'
 		case_links_list = []
 		case_number_list = []
-		page_value_json = {}
 		case_count = 0
 
 		#Collect all the links
@@ -567,11 +565,7 @@ class Downloader():
 
 		#open each link and save each page
 		for case_link in case_links_list:
-			case_details_page_response = self.opener.open( case_details_base_link + case_link )
-			if IS_CSO_LOGIN == False:
-				pacer_case_id = case_link[-5:]
-			else:
-				pacer_case_id = case_link[-6:]
+			case_details_page_response = self.extractor_object.opener.open( case_details_base_link + case_link )
 			case_number = case_number_list[case_count].strip(r'\s*|\n')
 			case_number = re.sub(r'[A-Z]{3}\-?', "", case_number).replace(':', '').replace('-', '_')
 			if case_number[-1:] != '_':
@@ -586,18 +580,6 @@ class Downloader():
 			case_count += 1
 			case_file_object.close()
 
-			#Save into the courtcase_source_data_path table
-			courtcase_id = self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
-			page_value_json['CASE'] = '/home/mis/DjangoProject/pacer_training/extractor/contents/case/' + str(file_name)
-			page_value_json = json.dumps(page_value_json)
-			self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
-			courtcase_id =  self.connection_cursor.fetchall()
-			courtcase_source_data_path_insert_query = """INSERT INTO courtcase_source_data_path(courtcase_id, page_value_json)
-										VALUES(%s, %s)"""
-			self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
-			self.connection.commit()
-			page_value_json = {}
-
 	def pacer_case_id_exists(self, case_number):
 		"""
 			Used to check if the pacer_case_id exists for a given case_number.
@@ -608,7 +590,7 @@ class Downloader():
 					False - otherwise.
 		"""
 
-		pacser_case_id = self.find_case_object.get_pacer_case_id(case_number, self.opener)
+		pacser_case_id = self.find_case_object.get_pacer_case_id(case_number, self.extractor_object.opener)
 		self.connection_cursor.execute("""SELECT pacer_case_id from courtcase WHERE case_number = %s""", (case_number, ))
 		existing_pacer_case_id = self.connection_cursor.fetchone()
 
@@ -617,18 +599,29 @@ class Downloader():
 		else:
 			return False
 
-	def download(self, case_details_page_contents):
+	def download(self):
+		"""
+			Used to make the appropriate function calls to
+			download the required case realated pages.
+			Arguments:
+					self
+		"""
+
 		self.case_details_list = []
+		login_page_contents = self.login_pacer()
+		self.validate_login_success(login_page_contents)
+		self.set_cookie_value(login_page_contents)
+		case_details_page_contents = self.get_case_details_page_contents()
+		self.parser_object = Parser()
+		self.parser_object.display_page_cost(case_details_page_contents)
 		self.save_all_case_details_page(case_details_page_contents)
-		parser_object = Parser()
-		parser_object.display_page_cost(case_details_page_contents)
-		EXTRACTOR_TYPE = PARSE_FILE
+		self.save_individual_cases(case_details_page_contents)
 
 	def display_pacer_case_id(self):
 		"""
 			Used to find the pacer_case_id.
 			This method is defined here because the
-			find_case moduldownload(e makes use of the opener.
+			find_case module makes use of the opener.
 			Arguments:
 					self
 			Returns:
@@ -640,28 +633,6 @@ class Downloader():
 		print "The PACER case Number is:\t", self.extractor_object.case_number
 		return
 
-	def parse_url_data(self, case_details_page_contents):
-
-		EXTRACTOR_TYPE = self.extractor_type
-		self.parser_object = Parser()
-
-		#REFRESH_CASE without DATE_RANGE
-		if self.extractor_object.case_number != '' and EXTRACTOR_TYPE == REFRESH_CASE:
-			self.get_page_based_on_case_number(self.extractor_object.case_number)
-		if EXTRACTOR_TYPE == FIND_CASE:
-			self.display_pacer_case_id()
-		if EXTRACTOR_TYPE == PACER_IMPORT_CASE:
-			is_pacer_case_id_exists = self.pacer_case_id_exists(self.extractor_object.case_number)
-			if not is_pacer_case_id_exists:
-				print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
-				new_case_file_name = self.save_import_case(case_details_page_contents, self.extractor_object.case_number)
-				case_details_tuple = self.parser_object.parse_case_details_page(new_case_file_name)
-				self.parser_object.save_case_details(case_details_tuple, new_case_file_name)
-				EXTRACTOR_TYPE = "REFRESH_CASE"
-				self.get_page_based_on_case_number(self.extractor_object.case_number)
-			else:
-				self.get_page_based_on_case_number(self.extractor_object.case_number)
-
 	def logout(self):
 		"""
 			Logout from the website
@@ -670,7 +641,7 @@ class Downloader():
 		"""
 
 		logout_page_url = "https://" + self.extractor_object.courthouse_link_element + ".uscourts.gov/cgi-bin/login.pl?logout"
-		logout_response = self.opener.open(logout_page_url)
+		logout_response = self.extractor_object.opener.open(logout_page_url)
 		logout_page_contents = logout_response.read()
 		print "Logout Successful"
 
@@ -699,13 +670,16 @@ class Parser():
 		Class is holds the methods to scrape the case
 		related data from the PACER training website.
 		Member functions:
-				1. display_page_cost(self, case_details_page_contents)
-				2. parse_case_details_page(self, file_name)
-				3. save_case_details(self,  case_details_tuple, file_name)
-				4. get_metadata_page(self)
-				5. save_metadata_page_contents(self, case_details_tuple_list)
-				6. get_local_parse_filename(self, case_number)
-				7. parse_local_docket_page(self, file_to_parse)
+				 1. display_page_cost(self, case_details_page_contents)
+				 2. parse_case_details_page(self, file_name)
+				 3. save_case_details(self, case_details_tuple, file_name)
+				 4. get_metadata_page(self)
+				 5. save_metadata_page_contents(self, case_details_tuple_list)
+				 6. get_local_parse_filename(self, case_number)
+				 7. parse_local_docket_page(self, file_to_parse)
+				 8. parse(self)
+				 9. parse_url_data(self)
+				10. parse_local_data(self)
 		Inherits:
 				None
 	"""
@@ -884,8 +858,10 @@ class Parser():
 		"""
 			Used when the extractor type is PARSE_FILE.
 			Parses the HTML file containing the search results.
+			Arguments:
+					self
 			Returns:
-					case_details_tuple_list - contains tuples of indivisual cases
+					case_details_tuple_list - a tuple containing list of indivisual cases
 		"""
 
 		case_details_tuple_list = []
@@ -950,6 +926,7 @@ class Parser():
 					case_details_tuple_list
 		"""
 
+		page_value_json = {}
 		METADATA = 1
 		courtcase_source_value = METADATA
 		case_details_insert_query = """INSERT INTO courtcase(download_tracker_id, courtcase_source_value, pacer_case_id, case_number,
@@ -981,6 +958,27 @@ class Parser():
 											courtcase_source_value, pacer_case_id, case_number, parties_involved,
 											case_filed_date, case_closed_date,))
 				self.connection.commit()
+
+				#Save into the courtcase_source_data_path table
+				case_number = case_number.strip(r'\s*|\n')
+				case_number = re.sub(r'[A-Z]{3}\-?', "", case_number).replace(':', '').replace('-', '_')
+				if case_number[-1:] != '_':
+			 		file_name = case_number + '.html'
+				else:
+					#Remove the - form the end
+					case_number = case_number[:-1]
+			 		file_name = case_number + '.html'
+				courtcase_id = self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
+				page_value_json['CASE'] = '/home/mis/DjangoProject/pacer_training/extractor/contents/case/' + str(file_name)
+				page_value_json = json.dumps(page_value_json)
+				self.connection_cursor.execute("SELECT id from courtcase WHERE pacer_case_id = %s", (pacer_case_id,))
+				courtcase_id =  self.connection_cursor.fetchall()
+				courtcase_source_data_path_insert_query = """INSERT INTO courtcase_source_data_path(courtcase_id, page_value_json)
+											VALUES(%s, %s)"""
+				self.connection_cursor.execute(courtcase_source_data_path_insert_query, (courtcase_id, page_value_json,))
+				self.connection.commit()
+				page_value_json = {}
+
 
 	def get_local_parse_filename(self, case_number):
 		"""
@@ -1038,16 +1036,67 @@ class Parser():
 		self.connection_cursor.execute(courtcase_update_query, (courtcase_source_value, pacer_case_id,))
 		self.connection.commit()
 
-	def parse(self, case_details_page_contents):
-		case_details_list = self.get_metadata_page()
-		self.save_metadata_page_contents(case_details_list)
-		EXTRACTOR_TYPE = REFRESH_CASE
+	def parse(self):
+		"""
+			Used to make the necessay function calls to
+			parse the saved files.
+			Arguments:
+					self
+		"""
 
-	def local_parse(self):
+		case_details_tuple_list = self.get_metadata_page()
+		self.save_metadata_page_contents(case_details_tuple_list)
+		self.extractor_object.extractor_type = REFRESH_CASE
+		print "Saved metadata of cases into the database"
+
+	def parse_url_data(self):
+		"""
+			Used to make the appropriate function calls for
+			REFRESH_CASE and PACER_IMPORT_CASE extractor types.
+			Also checks for local parsing.
+			Arguments:
+					self
+		"""
+
+		if not self.extractor_object.is_local_parsing:
+
+			login_page_contents = self.downloader_object.login_pacer()
+			self.downloader_object.set_cookie_value(login_page_contents)
+			self.downloader_object.validate_login_success(login_page_contents)
+
+			#Save the docket page
+			if self.extractor_object.case_number != '' and self.extractor_object.extractor_type == REFRESH_CASE:
+				self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
+
+			#PACER_IMPORT_CASE
+			elif self.extractor_object.extractor_type == PACER_IMPORT_CASE:
+				is_pacer_case_id_exists = self.downloader_object.pacer_case_id_exists(self.extractor_object.case_number)
+
+				#Non existing case
+				if not is_pacer_case_id_exists:
+					print "The case " + self.extractor_object.case_number + " does not exist. Importing it..."
+					case_details_page_contents = self.downloader_object.get_case_details_page_contents()
+					new_case_file_name = self.downloader_object.save_import_case(case_details_page_contents, self.extractor_object.case_number)
+					case_details_tuple = self.parse_case_details_page(new_case_file_name)
+					self.save_case_details(case_details_tuple, new_case_file_name)
+					self.extractor_object.extractor_type = "REFRESH_CASE"
+					self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
+
+				#Existing case
+				else:
+					self.downloader_object.save_page_based_on_case_number(self.extractor_object.case_number)
+		else:
+			self.parse_local_data()
+
+	def parse_local_data(self):
+		"""
+			Used to parse the files if the type of parsing
+			is local parsing.
+			Arguments:
+					self
+		"""
 
 		file_to_parse = self.get_local_parse_filename(self.extractor_object.case_number)
-
-		# [ Step 7 of 8 ] : Save the case details.
 		case_details_tuple = self.parse_case_details_page(file_to_parse)
 		self.save_case_details(case_details_tuple, file_to_parse)
 
